@@ -1,5 +1,6 @@
 package com.megatronix.paridhi.model;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import com.megatronix.paridhi.constant.Department;
@@ -28,7 +29,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "mrd_registrations")
-public class MRD {
+public class MRD implements Serializable {
   @Id
   @GeneratedValue( strategy = GenerationType.IDENTITY )
   private Long id;
