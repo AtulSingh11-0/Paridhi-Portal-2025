@@ -1,8 +1,8 @@
 package com.megatronix.paridhi.model;
 
 import java.time.LocalDateTime;
-import java.util.Random;
 
+import com.megatronix.paridhi.util.RandomUtil;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -44,10 +44,7 @@ public class OtpToken {
   @PrePersist
   protected void onCreate() {
     if (otp == null) {
-      // generate 6-digit OTP
-      Random random = new Random();
-      int otpNum = 100000 + random.nextInt(900000); // 6-digit number between 100000 and 999999
-      this.otp = String.valueOf(otpNum);
+      this.otp = RandomUtil.generateOtp();
     }
     // OTP valid for 10 minutes
     this.expiryDate = LocalDateTime.now().plusMinutes(10);
