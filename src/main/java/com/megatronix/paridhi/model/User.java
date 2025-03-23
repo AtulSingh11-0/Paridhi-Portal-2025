@@ -70,7 +70,7 @@ public class User implements UserDetails {
     private String rollNo;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<MRD> gids = new ArrayList<>();
+    private transient List<MRD> gids = new ArrayList<>();
 
     @Builder.Default
     private boolean isPaid = false;
