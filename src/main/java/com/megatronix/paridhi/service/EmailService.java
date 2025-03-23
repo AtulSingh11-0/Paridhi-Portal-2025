@@ -1,5 +1,6 @@
 package com.megatronix.paridhi.service;
 
+import com.megatronix.paridhi.exception.MailSendingException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -37,7 +38,7 @@ public class EmailService {
       log.info("Password reset token sent successfully to {}", to);
     } catch (MessagingException e) {
       log.error("Failed to send password reset token to {}", to, e);
-      throw new RuntimeException("Failed to send password reset token " + e.getMessage());
+      throw new MailSendingException("Failed to send password reset token " + e.getMessage(), e.getCause());
     }
   }
 
@@ -58,7 +59,7 @@ public class EmailService {
       log.info("Verification OTP sent successfully to {}", to);
     } catch (MessagingException e) {
       log.error("Failed to send verification OTP to {}", to, e);
-      throw new RuntimeException("Failed to send verification OTP " + e.getMessage());
+      throw new MailSendingException("Failed to send verification OTP " + e.getMessage(), e.getCause());
     }
   }
 
@@ -79,7 +80,7 @@ public class EmailService {
       log.info("MRD Registration confirmation sent successfully to {}", to);
     } catch (MessagingException e) {
       log.error("Failed to send MRD registration confirmation to {}", to, e);
-      throw new RuntimeException("Failed to send MRD registration confirmation " + e.getMessage());
+      throw new MailSendingException("Failed to send MRD registration confirmation " + e.getMessage(), e.getCause());
     }
   }
 
@@ -100,7 +101,7 @@ public class EmailService {
       log.info("Event registration confirmation sent successfully to {}", to);
     } catch (MessagingException e) {
       log.error("Failed to send event registration confirmation to {}", to, e);
-      throw new RuntimeException("Failed to send event registration confirmation " + e.getMessage());
+      throw new MailSendingException("Failed to send event registration confirmation " + e.getMessage(), e.getCause());
     }
   }
 
