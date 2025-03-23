@@ -27,6 +27,10 @@ public class AdminCreationRequest {
     @NotBlank(message = "Password cannot be empty")
     @Size(min = 6, max = 64, message = "Password must be between 6 adn 64 characters")
     private String password;
-    
-    private final Role role = Role.ROLE_ADMIN;
+
+    private static final Role role = Role.ROLE_ADMIN;
+
+    public Role getRole() {
+        return role;
+    }
 }
