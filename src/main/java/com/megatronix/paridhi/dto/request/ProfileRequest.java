@@ -23,7 +23,7 @@ public class ProfileRequest {
     private String email;
     
     @NotBlank(message = "Contact number cannot be empty")
-    @Pattern(regexp = "^[0-9]{10}$", message = "Contact must be 10 digits")
+    @Pattern(regexp = "^\\d{10}$", message = "Contact must be 10 digits")
     private String contact;
     
     @NotBlank(message = "College name cannot be empty")
