@@ -1,12 +1,10 @@
 package com.megatronix.paridhi.exception;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
@@ -40,17 +38,30 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse> handleAllUncaughtException(
 		Exception exception,
-		WebRequest request,
 		HttpServletRequest httpRequest
 	) {
-		log.error("Unknown error occurred", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-			.message("An unexpected error occurred")
+			.message(exception.getMessage())
 			.error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
 			.timestamp(LocalDateTime.now())
 			.path(httpRequest.getRequestURI())
+			.build();
+
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+	}
+
+	@ExceptionHandler(MailSendingException.class)
+	public ResponseEntity<ErrorResponse> handleMailSendingException(
+		MailSendingException exception,
+		HttpServletRequest request
+	) {
+		ErrorResponse errorResponse = ErrorResponse.builder()
+			.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+			.message(exception.getMessage())
+			.error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
+			.timestamp(LocalDateTime.now())
+			.path(request.getRequestURI())
 			.build();
 
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
@@ -64,8 +75,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		EntityNotFoundException exception,
 		HttpServletRequest request
 	) {
-		log.error("Entity not found", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.NOT_FOUND.value())
 			.message(exception.getMessage())
@@ -82,8 +91,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		EventNotFoundException exception,
 		HttpServletRequest request
 	) {
-		log.error("Event not found: ", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.NOT_FOUND.value())
 			.message(exception.getMessage())
@@ -100,8 +107,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		GIDNotFoundException exception,
 		HttpServletRequest request
 	) {
-		log.error("GID not found: ", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.NOT_FOUND.value())
 			.message(exception.getMessage())
@@ -118,8 +123,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		ResourceNotFoundException exception,
 		HttpServletRequest request
 	) {
-		log.error("Resource not found", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.NOT_FOUND.value())
 			.message(exception.getMessage())
@@ -136,8 +139,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		TeamNotFoundException exception,
 		HttpServletRequest request
 	) {
-		log.error("Team not found", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.NOT_FOUND.value())
 			.message(exception.getMessage())
@@ -154,8 +155,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		UserNotFoundException exception,
 		HttpServletRequest request
 	) {
-		log.error("User not found", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.NOT_FOUND.value())
 			.message(exception.getMessage())
@@ -195,8 +194,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		InvalidOtpException exception,
 		HttpServletRequest request
 	) {
-		log.error("Invalid OTP", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.BAD_REQUEST.value())
 			.message(exception.getMessage())
@@ -213,8 +210,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		InvalidRequestException exception,
 		HttpServletRequest request
 	) {
-		log.error("Invalid request", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.BAD_REQUEST.value())
 			.message(exception.getMessage())
@@ -231,8 +226,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		InvalidResetTokenException exception,
 		HttpServletRequest request
 	) {
-		log.error("Invalid reset token", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.BAD_REQUEST.value())
 			.message(exception.getMessage())
@@ -249,8 +242,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		OtpExpiredException exception,
 		HttpServletRequest request
 	) {
-		log.error("OTP expired", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.BAD_REQUEST.value())
 			.message(exception.getMessage())
@@ -267,8 +258,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		TokenExpiredException exception,
 		HttpServletRequest request
 	) {
-		log.error("Token expired", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.BAD_REQUEST.value())
 			.message(exception.getMessage())
@@ -285,6 +274,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		ConstraintViolationException exception,
 		HttpServletRequest request
 	) {
+		log.error("Constraint violation error: {}", exception.getMessage());
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.BAD_REQUEST.value())
 			.message("Validation error")
@@ -293,12 +283,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 			.path(request.getRequestURI())
 			.build();
 
-		exception.getConstraintViolations().forEach(violation -> {
-			errorResponse.addValidationError(
-				violation.getPropertyPath().toString(),
-				violation.getMessage()
-			);
-		});
+		exception.getConstraintViolations().forEach(violation -> errorResponse.addValidationError(
+			violation.getPropertyPath().toString(),
+			violation.getMessage()
+		));
 
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
 	}
@@ -309,6 +297,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		@NonNull HttpHeaders headers,
 		@NonNull HttpStatusCode status,@NonNull WebRequest request
 	) {
+		log.error("Validation error: {}", ex.getMessage());
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.BAD_REQUEST.value())
 			.message("Validation error")
@@ -317,9 +306,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 			.path(request.getDescription(false).substring(4))
 			.build();
 
-		ex.getBindingResult().getFieldErrors().forEach(fieldError -> {
-			errorResponse.addValidationError(fieldError.getField(), fieldError.getDefaultMessage());
-		});
+		ex.getBindingResult().getFieldErrors().forEach(fieldError -> errorResponse.addValidationError(fieldError.getField(), fieldError.getDefaultMessage()));
 
 		return ResponseEntity.badRequest().body(errorResponse);
 	}
@@ -329,7 +316,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		MethodArgumentTypeMismatchException exception,
 		HttpServletRequest request
 	) {
-		log.error("Method argument type mismatch", exception);
+		log.error("Invalid parameter type: {}", exception.getMessage());
 
 		String expectedType = exception.getRequiredType() != null
 			? exception.getRequiredType().getSimpleName()
@@ -355,8 +342,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		@NonNull HttpStatusCode status,
 		@NonNull WebRequest request
 	) {
-		log.error("Message not readable", ex);
-
+		log.error("Malformed JSON request: {}", ex.getMessage());
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.BAD_REQUEST.value())
 			.message("Malformed JSON request: " + ex.getMessage())
@@ -375,8 +361,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		@NonNull HttpStatusCode status,
 		@NonNull WebRequest request
 	) {
-		log.error("Missing parameter", ex);
-
+		log.error("Missing parameter: {}", ex.getParameterName());
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.BAD_REQUEST.value())
 			.message("Required parameter '" + ex.getParameterName() + "' is missing")
@@ -398,8 +383,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		RegistrationClosedException exception,
 		HttpServletRequest request
 	) {
-		log.error("Registration closed", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.FORBIDDEN.value())
 			.message(exception.getMessage())
@@ -416,8 +399,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		TeamRegistrationException exception,
 		HttpServletRequest request
 	) {
-		log.error("Team registration error", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.FORBIDDEN.value())
 			.message(exception.getMessage())
@@ -434,11 +415,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		AccessDeniedException exception,
 		HttpServletRequest request
 	) {
-		log.error("Access denied", exception);
-
+		log.error("Access denied: {}", exception.getMessage());
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.FORBIDDEN.value())
-			.message("You don't have permission to access this resource")
+			.message("You don't have permission to access this resource: {}" + exception.getMessage())
 			.error(HttpStatus.FORBIDDEN.getReasonPhrase())
 			.timestamp(LocalDateTime.now())
 			.path(request.getRequestURI())
@@ -452,8 +432,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		ForbiddenAccessException exception,
 		HttpServletRequest request
 	) {
-		log.error("Forbidden access", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.FORBIDDEN.value())
 			.message(exception.getMessage())
@@ -475,8 +453,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		DuplicateResourceException exception,
 		HttpServletRequest request
 	) {
-		log.error("Duplicate resource", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.CONFLICT.value())
 			.message(exception.getMessage())
@@ -493,8 +469,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		UserAlreadyExistsException exception,
 		HttpServletRequest request
 	) {
-		log.error("User already exists", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.CONFLICT.value())
 			.message(exception.getMessage())
@@ -511,8 +485,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		UserAlreadyVerifiedException exception,
 		HttpServletRequest request
 	) {
-		log.error("User already verified", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.CONFLICT.value())
 			.message(exception.getMessage())
@@ -529,11 +501,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		DataIntegrityViolationException exception,
 		HttpServletRequest request
 	) {
-		log.error("Data integrity violation", exception);
-
+		log.error("Data integrity violation: {}", exception.getMessage());
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.CONFLICT.value())
-			.message("Data integrity violation: Operation cannot be performed")
+			.message("Data integrity violation: Operation cannot be performed: " + exception.getMessage())
 			.error(HttpStatus.CONFLICT.getReasonPhrase())
 			.timestamp(LocalDateTime.now())
 			.path(request.getRequestURI())
@@ -552,11 +523,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		BadCredentialsException exception,
 		HttpServletRequest request
 	) {
-		log.error("Authentication failed", exception);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.UNAUTHORIZED.value())
-			.message("Invalid username or password")
+			.message("Invalid username or password: " + exception.getMessage())
 			.error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
 			.timestamp(LocalDateTime.now())
 			.path(request.getRequestURI())
@@ -570,8 +539,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		AuthenticationException exception,
 		HttpServletRequest request
 	) {
-		log.error("Authentication error", exception);
-
+		log.error("Authentication failed: {}", exception.getMessage());
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.UNAUTHORIZED.value())
 			.message("Authentication failed: " + exception.getMessage())
@@ -588,8 +556,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		JwtException exception,
 		HttpServletRequest request
 	) {
-		log.error("JWT token error", exception);
-
 		HttpStatus status = HttpStatus.UNAUTHORIZED;
 		String message = "Invalid token";
 
@@ -620,8 +586,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		@NonNull HttpStatusCode status,
 		@NonNull WebRequest request
 	) {
-		log.error("File size exceeds maximum allowed size", ex);
-
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.PAYLOAD_TOO_LARGE.value())
 			.message("File size exceeds the maximum allowed size")
@@ -636,8 +600,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	/************************************************************** PAYLOAD TOO LARGE EXCEPTION's **************************************************************/
 
 
-	/************************************************************** PAYLOAD TOO LARGE EXCEPTION's **************************************************************/
-
 	/************************************************************** METHOD NOT ALLOWED EXCEPTION's **************************************************************/
 
 	@Override
@@ -647,13 +609,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		@NonNull HttpStatusCode status,
 		@NonNull WebRequest request
 	) {
-		log.error("Method not allowed", ex);
-
 		StringBuilder builder = new StringBuilder();
 		builder.append(ex.getMethod());
 		builder.append(" method is not supported for this request. Supported methods are ");
-		if (ex.getSupportedHttpMethods() != null) {
-			ex.getSupportedHttpMethods().forEach(method -> builder.append(method).append(" "));
+		Set< HttpMethod > supportedMethods = ex.getSupportedHttpMethods();
+		if (supportedMethods != null && !supportedMethods.isEmpty()) {
+			supportedMethods.forEach(method -> builder.append(method).append(" "));
 		} else {
 			builder.append("none");
 		}
@@ -681,8 +642,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		@NonNull HttpStatusCode status,
 		@NonNull WebRequest request
 	) {
-		log.error("Media type not supported", ex);
-
 		StringBuilder builder = new StringBuilder();
 		builder.append(ex.getContentType());
 		builder.append(" media type is not supported. Supported media types are ");
