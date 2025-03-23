@@ -139,11 +139,9 @@ public class MRDService {
   }
 
   private void checkUserAccess(User user, String email, String methodName) {
-    if (user.getRole().equals(Role.ROLE_USER)) {
-      if (!user.getEmail().equals(email)) {
-        log.error("User with ID: {} not authorized to {} for email: {}", user.getId(), email);
-        throw new ForbiddenAccessException("User not authorized to " + methodName);
-      }
+    if (user.getRole().equals(Role.ROLE_USER) && !user.getEmail().equals(email)) {
+      log.error("User with ID: {} not authorized to {} for email: {}", user.getId(), methodName, email);
+      throw new ForbiddenAccessException("User not authorized to " + methodName);
     }
   }
 }
