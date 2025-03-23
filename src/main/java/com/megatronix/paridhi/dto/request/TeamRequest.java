@@ -34,6 +34,6 @@ public class TeamRequest {
     private List<String> gidList;
     
     @NotBlank(message = "Contact number cannot be empty")
-    @Pattern(regexp = "^[0-9]{10}$", message = "Contact must be 10 digits")
+    @Pattern(regexp = "^\\d{10}$", message = "Contact must be 10 digits")
     private String contact;
 }
