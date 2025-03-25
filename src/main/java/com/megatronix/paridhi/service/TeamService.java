@@ -1,18 +1,24 @@
 package com.megatronix.paridhi.service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.megatronix.paridhi.dto.request.ComboTeamRequest;
+import com.megatronix.paridhi.dto.request.TeamRequest;
+import com.megatronix.paridhi.dto.response.TeamResponse;
+import com.megatronix.paridhi.exception.ComboNotFoundException;
 import com.megatronix.paridhi.exception.EventNotFoundException;
 import com.megatronix.paridhi.exception.TeamNotFoundException;
 import com.megatronix.paridhi.exception.TeamRegistrationException;
 import com.megatronix.paridhi.exception.UserNotFoundException;
-import com.megatronix.paridhi.dto.request.TeamRequest;
-import com.megatronix.paridhi.dto.response.TeamResponse;
+import com.megatronix.paridhi.model.Event;
 import com.megatronix.paridhi.model.Team;
+import com.megatronix.paridhi.repository.ComboRepository;
 import com.megatronix.paridhi.repository.EventRepository;
 import com.megatronix.paridhi.repository.MRDRepository;
 import com.megatronix.paridhi.repository.TeamRepository;
@@ -27,8 +33,9 @@ import lombok.extern.slf4j.Slf4j;
 public class TeamService {
   private final EmailService emailService;
   private final MRDRepository mrdRepository;
-  private final TeamRepository teamRepository;
   private final UserRepository userRepository;
+  private final TeamRepository teamRepository;
+  private final ComboRepository comboRepository;
   private final EventRepository eventRepository;
 
   public TeamResponse registerTeam(TeamRequest request) {
@@ -67,20 +74,7 @@ public class TeamService {
       throw new TeamRegistrationException(String.format("Team size '%d' must be between: %d and %d for event: %s", teamSize, event.getMinPlayers(), event.getMaxPlayers(), event.getName()));
     }
 
-    // validate that all GIDs exist in MRD
-    for ( String gid : request.getGidList() ) {
-      if ( !mrdRepository.existsByGid(gid) ) {
-        log.error("Invalid GID: {}", gid);
-        throw new TeamRegistrationException("Invalid GID: " + gid);
-      }
-    }
-
-    // check for duplicate GIDs in the request
-    Set<String> uniqueGids = new HashSet<>(request.getGidList());
-    if ( uniqueGids.size() != request.getGidList().size() ) {
-      log.error("Duplicate GIDs found in the request");
-      throw new TeamRegistrationException("Duplicate GIDs are not allowed");
-    }
+    validateGids(request.getGidList());
 
     // check if any of the GID is already registered for this event
     for ( String gid : request.getGidList() ) {
@@ -115,6 +109,93 @@ public class TeamService {
 
     // return the response
     return TeamResponse.fromTeam(savedTeam);
+  }
+
+  @Transactional
+  public List<TeamResponse> registerTeamForCombo(ComboTeamRequest request) {
+    log.info("Team registration for combo request: {}", request);
+
+    // find the combo
+    var combo = comboRepository.findById(request.getComboId())
+      .orElseThrow( () -> {
+        log.error("Combo not found with ID: {}", request.getComboId());
+        return new ComboNotFoundException("Combo not found with ID: " + request.getComboId());
+      });
+    
+    // check if registration for the combo is open or not
+    if (!combo.isRegistrationOpen()) {
+      log.error("Registration is closed for combo: {}", combo.getName());
+      throw new TeamRegistrationException("Registration is closed for combo: " + combo.getName());
+    }
+
+    // find the team leader
+    var teamLeader = userRepository.findUserByEmail(request.getTeamLeaderEmail())
+      .orElseThrow( () -> {
+        log.error("User not found with email: {}", request.getTeamLeaderEmail());
+        return new UserNotFoundException("User not found with email: " + request.getTeamLeaderEmail());
+      });
+
+    // validate GIDs 
+    validateGids(request.getGidList());
+
+    // create a list to hold all the team responses
+    List<TeamResponse> teamResponses = new ArrayList<>();
+
+    // for each event in the combo, create a team
+    for (Event event : combo.getEvents()) {
+      // check if registration is open for the event
+      if (!event.isRegistrationOpen()) {
+        log.error("Registration is closed for event: {}", event.getName());
+        throw new TeamRegistrationException("Registration is closed for event: " + event.getName());
+      }
+
+      // validate team size based on the event
+      int teamSize = request.getGidList().size();
+      if (teamSize < event.getMinPlayers() || teamSize > event.getMaxPlayers()) {
+        log.error("Invalid team size: {}. Required: min={}, max={} for event: {}", teamSize, event.getMinPlayers(), event.getMaxPlayers(), event.getName());
+        throw new TeamRegistrationException(String.format("Team size '%d' must be between: %d and %d for event: %s", teamSize, event.getMinPlayers(), event.getMaxPlayers(), event.getName()));
+      }
+
+      // check if any of the GID is already registered for this event
+      for (String gid : request.getGidList()) {
+        // check if this GID is already in a team for this event
+        boolean gidAlreadyRegistered = teamRepository.findByEvent(event)
+          .stream()
+          .flatMap(team -> team.getGidList().stream())
+          .anyMatch(gid::equals);
+
+        if (gidAlreadyRegistered) {
+          log.error("GID '{}' is already registered for event: {}", gid, event.getName());
+          throw new TeamRegistrationException(String.format("GID '%s' is already registered for event: %s", gid, event.getName()));
+        }
+      }
+      // create and save the teams
+      var team = Team.builder()
+        .teamName(request.getTeamName())
+        .event(event)
+        .teamLeader(teamLeader)
+        .gidList(request.getGidList())
+        .contact(request.getContact())
+        .isPaid(false)
+        .hasPlayed(false)
+        .build();
+      
+      var savedTeam = teamRepository.save(team);
+      log.info("Team registered for event {} as part of combo: {}", event.getName(), savedTeam);
+  
+      // add to response list
+      teamResponses.add(TeamResponse.fromTeam(savedTeam));
+
+      // send email to the team leader
+      emailService.sendEventRegistration(teamLeader.getEmail(), event.getName(), team.getTeamName(), team.getTid());
+    }
+
+    if (teamResponses.isEmpty()) {
+      log.error("No teams registered for combo: {}", combo.getName());
+      throw new TeamRegistrationException("No teams registered for combo: " + combo.getName());
+    }
+
+    return teamResponses;
   }
 
   public List<TeamResponse> getTeamsByEvent(Long eventId) {
@@ -224,5 +305,22 @@ public class TeamService {
     return teams.stream()
       .map(TeamResponse::fromTeam)
       .toList();
+  }
+
+  private void validateGids(List<String> gidList) {
+    // validate that all GIDs exist in MRD
+    for ( String gid : gidList ) {
+      if ( !mrdRepository.existsByGid(gid) ) {
+        log.error("Invalid GID: {}", gid);
+        throw new TeamRegistrationException("Invalid GID: " + gid);
+      }
+    }
+
+    // check for duplicate GIDs in the request
+    Set<String> uniqueGids = new HashSet<>(gidList);
+    if ( uniqueGids.size() != gidList.size() ) {
+      log.error("Duplicate GIDs found in the request");
+      throw new TeamRegistrationException("Duplicate GIDs are not allowed");
+    }
   }
 }
