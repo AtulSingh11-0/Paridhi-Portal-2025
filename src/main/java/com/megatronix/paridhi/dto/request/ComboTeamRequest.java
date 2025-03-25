@@ -1,6 +1,7 @@
 package com.megatronix.paridhi.dto.request;
 
 import java.util.List;
+import java.util.Map;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -29,8 +30,8 @@ public class ComboTeamRequest {
   @Email(message = "Team leader email should be valid")
   private String teamLeaderEmail;
 
-  @NotEmpty(message = "GID list cannot be empty")
-  private List<String> gidList;
+  @NotEmpty(message = "Event GID mappings cannot be empty")
+  private Map<Long, List<String>> eventGidMap;
 
   @NotBlank(message = "Contact number cannot be empty")
   @Pattern(regexp = "^\\d{10}$", message = "Contact must be 10 digits")

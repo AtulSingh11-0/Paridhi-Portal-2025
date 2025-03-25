@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -135,14 +136,24 @@ public class TeamService {
         return new UserNotFoundException("User not found with email: " + request.getTeamLeaderEmail());
       });
 
-    // validate GIDs 
-    validateGids(request.getGidList());
+    // validate that we have GID mappings for all events in the combo
+    Set<Long> comboEventIds = combo.getEvents().stream()
+      .map(Event::getId)
+      .collect(Collectors.toSet());
+    
+    if ( !request.getEventGidMap().keySet().containsAll(comboEventIds) ) {
+      log.error("Missing GID mappings for some events in the combo: {}", combo.getName());
+      throw new TeamRegistrationException("You must provide GID list for all events in the combo: " + combo.getName());
+    }
 
     // create a list to hold all the team responses
     List<TeamResponse> teamResponses = new ArrayList<>();
 
     // for each event in the combo, create a team
     for (Event event : combo.getEvents()) {
+      Long eventId = event.getId();
+      List<String> eventGids = request.getEventGidMap().get(eventId);
+
       // check if registration is open for the event
       if (!event.isRegistrationOpen()) {
         log.error("Registration is closed for event: {}", event.getName());
@@ -150,14 +161,17 @@ public class TeamService {
       }
 
       // validate team size based on the event
-      int teamSize = request.getGidList().size();
+      int teamSize = eventGids.size();
       if (teamSize < event.getMinPlayers() || teamSize > event.getMaxPlayers()) {
         log.error("Invalid team size: {}. Required: min={}, max={} for event: {}", teamSize, event.getMinPlayers(), event.getMaxPlayers(), event.getName());
         throw new TeamRegistrationException(String.format("Team size '%d' must be between: %d and %d for event: %s", teamSize, event.getMinPlayers(), event.getMaxPlayers(), event.getName()));
       }
 
+      // validate all GIDs for this event
+      validateGids(eventGids);
+
       // check if any of the GID is already registered for this event
-      for (String gid : request.getGidList()) {
+      for (String gid : eventGids) {
         // check if this GID is already in a team for this event
         boolean gidAlreadyRegistered = teamRepository.findByEvent(event)
           .stream()
@@ -174,7 +188,7 @@ public class TeamService {
         .teamName(request.getTeamName())
         .event(event)
         .teamLeader(teamLeader)
-        .gidList(request.getGidList())
+        .gidList(eventGids)
         .contact(request.getContact())
         .isPaid(false)
         .hasPlayed(false)
