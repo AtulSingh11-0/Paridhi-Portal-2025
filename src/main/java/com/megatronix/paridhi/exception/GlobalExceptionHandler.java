@@ -4,7 +4,11 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
@@ -184,10 +188,42 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
 	}
 
+	@ExceptionHandler(ComboNotFoundException.class)
+	public ResponseEntity<ErrorResponse> handleComboNotFoundException(
+		ComboNotFoundException exception,
+		HttpServletRequest request
+	) {
+		ErrorResponse errorResponse = ErrorResponse.builder()
+			.status(HttpStatus.NOT_FOUND.value())
+			.message(exception.getMessage())
+			.error(HttpStatus.NOT_FOUND.getReasonPhrase())
+			.timestamp(LocalDateTime.now())
+			.path(request.getRequestURI())
+			.build();
+
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+	}
+
 	/************************************************************** NOT FOUND EXCEPTION's **************************************************************/
 
 
 	/************************************************************** BAD REQUEST EXCEPTION's **************************************************************/
+
+	@ExceptionHandler(InvalidDomainException.class)
+	public ResponseEntity<ErrorResponse> handleInvalidDomainException(
+		InvalidDomainException exception,
+		HttpServletRequest request
+	) {
+		ErrorResponse errorResponse = ErrorResponse.builder()
+			.status(HttpStatus.BAD_REQUEST.value())
+			.message(exception.getMessage())
+			.error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+			.timestamp(LocalDateTime.now())
+			.path(request.getRequestURI())
+			.build();
+
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+	}
 
 	@ExceptionHandler(InvalidOtpException.class)
 	public ResponseEntity<ErrorResponse> handleInvalidOtpException(
