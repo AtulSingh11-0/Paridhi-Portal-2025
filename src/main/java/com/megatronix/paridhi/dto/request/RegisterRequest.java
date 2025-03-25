@@ -29,4 +29,8 @@ public class RegisterRequest {
     private String password;
     
     private static final Role role = Role.ROLE_USER;
+
+    public Role getRole() {
+        return role;
+    }
 }
