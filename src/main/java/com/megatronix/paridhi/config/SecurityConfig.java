@@ -43,6 +43,10 @@ public class SecurityConfig {
         .requestMatchers("/api/events/domains/**").permitAll() // Allow access to view events by domain
         .requestMatchers("/api/events/type/**").permitAll() // Allow access to view events by type
         .requestMatchers("/api/events/{id}").permitAll() // Allow access to view specific event
+        .requestMatchers("/api/combos").permitAll() // Allow public access to view combos
+        .requestMatchers("/api/combos/{id}").permitAll() // Allow public access to view specific combo
+        .requestMatchers("/api/combos/domains/**").permitAll() // Allow public access to view combos by domain
+        .requestMatchers("/api/combos/status").permitAll() // Allow public access to view combos by status
         .requestMatchers("/api/mrd/register").permitAll() // Allow public access to register for MRD
         .anyRequest().authenticated()
       )
