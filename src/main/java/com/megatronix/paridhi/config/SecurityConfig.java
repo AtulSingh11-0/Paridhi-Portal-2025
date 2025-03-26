@@ -48,6 +48,7 @@ public class SecurityConfig {
         .requestMatchers("/api/combos/domains/**").permitAll() // Allow public access to view combos by domain
         .requestMatchers("/api/combos/status").permitAll() // Allow public access to view combos by status
         .requestMatchers("/api/mrd/register").permitAll() // Allow public access to register for MRD
+				.requestMatchers("/api/profiles/**").permitAll()
         .anyRequest().authenticated()
       )
       .exceptionHandling(exception -> exception
