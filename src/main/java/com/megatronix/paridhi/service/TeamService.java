@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.megatronix.paridhi.constant.Position;
 import com.megatronix.paridhi.dto.request.ComboTeamRequest;
 import com.megatronix.paridhi.dto.request.TeamRequest;
 import com.megatronix.paridhi.dto.response.TeamResponse;
@@ -94,6 +95,8 @@ public class TeamService {
 			.gidList(request.getGidList())
       .isPaid(false)
       .hasPlayed(false)
+			.isQualified(false)
+			.position(Position.NONE)
       .build();
 
     var savedTeam = teamRepository.save(team);
@@ -186,6 +189,8 @@ public class TeamService {
         .gidList(eventGids)
         .isPaid(false)
         .hasPlayed(false)
+				.isQualified(false)
+				.position(Position.NONE)
         .build();
       
       var savedTeam = teamRepository.save(team);
@@ -290,6 +295,12 @@ public class TeamService {
     });
     log.info("Updating played status for team with TID {}: {}", tid, team.isHasPlayed());
     
+		// check if team has paid
+		if (!team.isPaid()) {
+			log.error("Team must have paid to update played status");
+			throw new IllegalArgumentException("Team must have paid to update played status");
+		}
+
     // update and save the played status
     team.setHasPlayed(!team.isHasPlayed());
     var updatedTeam = teamRepository.save(team);
@@ -298,6 +309,87 @@ public class TeamService {
     // return the updated team
     return TeamResponse.fromTeam(updatedTeam);
   }
+
+	public TeamResponse updateQualifiedStatus(String tid) {
+		// find the team
+		var team = teamRepository.findByTid(tid)
+		.orElseThrow( () -> {
+			log.error("Team not found with TID: {}", tid);  
+			return new TeamNotFoundException("Team not found with TID: " + tid);
+		});
+		log.info("Updating qualified status for team with TID {}: {}", tid, team.isQualified());
+		
+		// check if team has played
+		if (!team.isHasPlayed()) {
+			log.error("Team must have played to update qualified status");
+			throw new IllegalArgumentException("Team must have played to update qualified status");
+		}
+
+		// update and save the qualified status
+		team.setQualified(!team.isQualified());
+		var updatedTeam = teamRepository.save(team);
+		log.info("Updated qualified status for team: {}", updatedTeam);
+		
+		// send email to the team who have qualified for finals
+		if (updatedTeam.isQualified()) {
+			// fetch emails of all team members
+			var teamMemberEmails = mrdRepository.findUserEmailListByGidList(updatedTeam.getGidList());
+
+			// send qualified email to all the team members
+			emailService.sendQualificationCongratulations(
+				teamMemberEmails.toArray(new String[0]), 
+				updatedTeam.getEvent().getName(), 
+				updatedTeam.getTeamName(), 
+				updatedTeam.getTid()
+			);
+		}
+
+		// return the updated team
+		return TeamResponse.fromTeam(updatedTeam);
+	}
+
+	public TeamResponse updatePosition(String tid, Position position) {
+		// find the team
+		var team = teamRepository.findByTid(tid)
+		.orElseThrow( () -> {
+			log.error("Team not found with TID: {}", tid);  
+			return new TeamNotFoundException("Team not found with TID: " + tid);
+		});
+		log.info("Updating position for team with TID {}: {}", tid, team.getPosition());
+		
+		// check if team is qualified
+		if (!team.isQualified()) {
+			log.error("Team must be qualified to update position");
+			throw new IllegalArgumentException("Team must be qualified to update position");
+		}
+
+		// only send email if position is not 'NONE' and is not the same as the current position
+		boolean isWinningPosition = position != null && position != Position.NONE;
+		Position previousPosition = team.getPosition();
+		
+		// update and save the position
+		team.setPosition(position != null ? position : Position.NONE);
+		var updatedTeam = teamRepository.save(team);
+		log.info("Updated position for team: {}", updatedTeam);
+		
+		// send email to the team who have secured a position in the finals
+		if (isWinningPosition && position != previousPosition) {
+			// fetch emails of all team members
+			var teamMemberEmails = mrdRepository.findUserEmailListByGidList(updatedTeam.getGidList());
+
+			// send position email to all the team members
+			emailService.sendPositionCongratulations(
+				teamMemberEmails.toArray(new String[0]), 
+				updatedTeam.getEvent().getName(), 
+				updatedTeam.getTeamName(), 
+				updatedTeam.getTid(), 
+				updatedTeam.getPosition()
+			);
+		}
+
+		// return the updated team
+		return TeamResponse.fromTeam(updatedTeam);
+	}
 
   public List<TeamResponse> getTeamsByGid(String gid) {
     log.info("Fetching teams by GID: {}", gid);

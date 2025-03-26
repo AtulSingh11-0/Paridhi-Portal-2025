@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.megatronix.paridhi.constant.Position;
 import com.megatronix.paridhi.dto.request.TeamRequest;
 import com.megatronix.paridhi.dto.response.TeamResponse;
 import com.megatronix.paridhi.service.TeamService;
@@ -81,4 +83,21 @@ public class TeamController {
   ) {
     return ResponseEntity.ok(teamService.updatePlayedStatus(tid));
   }
+
+	@PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+	@PatchMapping("{tid}/qualified")
+	public ResponseEntity<TeamResponse> updateQualifiedStatus(
+		@PathVariable String tid
+	) {
+		return ResponseEntity.ok(teamService.updateQualifiedStatus(tid));
+	}
+
+	@PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+	@PatchMapping("{tid}") 
+	public ResponseEntity<TeamResponse> updatePosition(
+		@PathVariable String tid,
+		@RequestParam(name = "position") Position position
+	) {
+		return ResponseEntity.ok(teamService.updatePosition(tid, position));
+	}
 }

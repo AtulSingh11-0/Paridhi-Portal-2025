@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.megatronix.paridhi.constant.Position;
 import com.megatronix.paridhi.model.Team;
 
 import lombok.AllArgsConstructor;
@@ -25,6 +26,8 @@ public class TeamResponse {
   private List<String> gidList;
   private boolean isPaid;
   private boolean hasPlayed;
+	private boolean isQualified;
+	private Position position;
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
   private LocalDateTime registeredAt;
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -54,6 +57,8 @@ public class TeamResponse {
       .gidList(team.getGidList())
       .isPaid(team.isPaid())
       .hasPlayed(team.isHasPlayed())
+			.isQualified(team.isQualified())
+			.position(team.getPosition())
       .registeredAt(team.getRegisteredAt())
       .updatedAt(team.getUpdatedAt())
       .build();

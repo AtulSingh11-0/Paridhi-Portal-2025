@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.megatronix.paridhi.constant.Position;
+
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -63,6 +65,8 @@ public class Team {
 
   private boolean isPaid;
   private boolean hasPlayed;
+	private boolean isQualified;
+	private Position position;
   private LocalDateTime registeredAt;
   private LocalDateTime updatedAt;
 
