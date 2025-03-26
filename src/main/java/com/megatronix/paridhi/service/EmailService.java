@@ -105,6 +105,27 @@ public class EmailService {
     }
   }
 
+	@Async
+	public void sendEventRegistration(String[] to, String eventName, String teamName, String tid) {
+		log.info("Sending event registration confirmation to {}", to);
+
+		// create simple mail message
+		try {
+			MimeMessage message = javaMailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(message, true);
+			helper.setFrom(fromEmail);
+			helper.setTo(to);
+			helper.setSubject("Paridhi 2025 - Event Registration Confirmation");
+			helper.setText(getRDContent(teamName, eventName, tid), true);
+
+			javaMailSender.send(message);
+			log.info("Event registration confirmation sent successfully to {}", to);
+		} catch (MessagingException e) {
+			log.error("Failed to send event registration confirmation to {}", to, e);
+			throw new MailSendingException("Failed to send event registration confirmation " + e.getMessage(), e.getCause());
+		}
+	}
+
 	public String getResetTokenContent(String name, String token) {
     return """
 			<!DOCTYPE html>
