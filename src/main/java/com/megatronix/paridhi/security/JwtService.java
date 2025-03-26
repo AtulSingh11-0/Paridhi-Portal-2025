@@ -75,8 +75,12 @@ public class JwtService {
     return LocalDateTime.ofInstant(expirationDate.toInstant(), ZoneId.systemDefault());
   }
 
-  private boolean isTokenExpired(String token) {
-    return extractExpiration(token).before(new Date());
+  public boolean isTokenExpired(String token) {
+    try {
+			return extractExpiration(token).before(new Date());
+		} catch (Exception e) {
+			return true;
+		}
   }
 
   private Date extractExpiration(String token) {
