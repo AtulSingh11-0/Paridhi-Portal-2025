@@ -1,8 +1,11 @@
 package com.megatronix.paridhi.security;
 
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import com.megatronix.paridhi.dto.response.TeamResponse;
+import com.megatronix.paridhi.repository.MRDRepository;
 import com.megatronix.paridhi.service.TeamService;
 
 import lombok.RequiredArgsConstructor;
@@ -11,12 +14,17 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TeamSecurity {
     private final TeamService teamService;
-    
+    private final MRDRepository mrdRepository;
+
     public boolean isTeamMember(String tid, String email) {
         try {
             TeamResponse team = teamService.getTeamByTid(tid);
-            // Check if the user is the team leader or a team member
-            return team.getTeamLeader().getEmail().equals(email);
+
+						//get GIDs for the email
+						List<String> gids = mrdRepository.findGidListByUserEmail(email);
+
+						// check if any of the user's GIDs are in the team
+						return team.getGidList().stream().anyMatch(gids::contains);
         } catch (Exception e) {
             return false;
         }

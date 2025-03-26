@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.UUID;
 
 import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -42,21 +44,23 @@ public class Team {
   )
   private Event event;
 
-  @ManyToOne
-  @JoinColumn(
-    name = "team_leader_id", 
-    nullable = false
-  )
-  private User teamLeader;
+	@ElementCollection
+	@CollectionTable(
+		name = "team_contacts",
+		joinColumns = @JoinColumn(name = "team_id")
+	)
+	@Builder.Default
+  private List<Contact> contacts = new ArrayList<>();
 
   @ElementCollection
   @CollectionTable(
     name = "team_gids", 
     joinColumns = @JoinColumn(name = "team_id")
   )
+	@Column(name = "gid")
+	@Builder.Default
   private List<String> gidList = new ArrayList<>();
 
-  private String contact;
   private boolean isPaid;
   private boolean hasPlayed;
   private LocalDateTime registeredAt;
@@ -73,4 +77,13 @@ public class Team {
   protected void onUpdate() {
     this.updatedAt = LocalDateTime.now();
   }
+
+	@Data
+	@Embeddable
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class Contact {
+		private String name;
+		private String contact;
+	}
 }

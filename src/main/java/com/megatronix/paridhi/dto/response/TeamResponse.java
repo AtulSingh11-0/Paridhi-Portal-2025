@@ -21,9 +21,8 @@ public class TeamResponse {
   private String teamName;
   private Long eventId;
   private String eventName;
-  private TeamLeaderDto teamLeader;
+  private List<ContacDto> contacts;
   private List<String> gidList;
-  private String contact;
   private boolean isPaid;
   private boolean hasPlayed;
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -35,11 +34,9 @@ public class TeamResponse {
   @Builder
   @NoArgsConstructor
   @AllArgsConstructor
-  public static class TeamLeaderDto {
-    private Long id;
+  public static class ContacDto {
     private String name;
-    private String email;
-    private String contact;
+		private String number;
   }
 
   public static TeamResponse fromTeam(Team team) {
@@ -49,14 +46,12 @@ public class TeamResponse {
       .teamName(team.getTeamName())
       .eventId(team.getEvent().getId())
       .eventName(team.getEvent().getName())
-      .teamLeader(TeamLeaderDto.builder()
-        .id(team.getTeamLeader().getId())
-        .name(team.getTeamLeader().getName())
-        .email(team.getTeamLeader().getEmail())
-        .contact(team.getTeamLeader().getContact())
-        .build())
+			.contacts(
+				team.getContacts().stream()
+					.map(contact -> new ContacDto(contact.getName(), contact.getContact()))
+					.toList()
+			)
       .gidList(team.getGidList())
-      .contact(team.getContact())
       .isPaid(team.isPaid())
       .hasPlayed(team.isHasPlayed())
       .registeredAt(team.getRegisteredAt())

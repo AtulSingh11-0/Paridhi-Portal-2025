@@ -23,7 +23,6 @@ import com.megatronix.paridhi.repository.ComboRepository;
 import com.megatronix.paridhi.repository.EventRepository;
 import com.megatronix.paridhi.repository.MRDRepository;
 import com.megatronix.paridhi.repository.TeamRepository;
-import com.megatronix.paridhi.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +33,6 @@ import lombok.extern.slf4j.Slf4j;
 public class TeamService {
   private final EmailService emailService;
   private final MRDRepository mrdRepository;
-  private final UserRepository userRepository;
   private final TeamRepository teamRepository;
   private final ComboRepository comboRepository;
   private final EventRepository eventRepository;
@@ -54,13 +52,6 @@ public class TeamService {
       log.error("Registration is closed for event: {}", event.getName());
       throw new TeamRegistrationException("Registration is closed for event: " + event.getName());
     }
-
-    // find the team leader
-    var teamLeader = userRepository.findUserByEmail(request.getTeamLeaderEmail())
-      .orElseThrow( () -> {
-        log.error("User not found with email: {}", request.getTeamLeaderEmail());
-        return new UserNotFoundException("User not found with email: " + request.getTeamLeaderEmail());
-      });
 
     // check if team name already exists for the event
     if ( teamRepository.existsByTeamNameAndEvent(request.getTeamName(), event) ) {
@@ -95,9 +86,12 @@ public class TeamService {
     var team = Team.builder()
       .teamName(request.getTeamName())
       .event(event)
-      .teamLeader(teamLeader)
-      .gidList(request.getGidList())
-      .contact(request.getContact())
+			.contacts(
+				request.getContacts().stream()
+					.map(contactDTO -> new Team.Contact(contactDTO.getName(), contactDTO.getContact()))
+					.toList()
+			)
+			.gidList(request.getGidList())
       .isPaid(false)
       .hasPlayed(false)
       .build();
@@ -105,8 +99,11 @@ public class TeamService {
     var savedTeam = teamRepository.save(team);
     log.info("Team registered successfully: {}", savedTeam);
 
-    // send email to the team leader
-    emailService.sendEventRegistration(teamLeader.getEmail(), event.getName(), team.getTeamName(), team.getTid());
+		// fetch emails of all the team members registered with GID
+		List<String> teamMemberEmails = mrdRepository.findUserEmailListByGidList(savedTeam.getGidList());
+
+    // send email to all the team members
+    emailService.sendEventRegistration(teamMemberEmails.toArray(new String[0]), event.getName(), team.getTeamName(), team.getTid());
 
     // return the response
     return TeamResponse.fromTeam(savedTeam);
@@ -129,13 +126,6 @@ public class TeamService {
       throw new TeamRegistrationException("Registration is closed for combo: " + combo.getName());
     }
 
-    // find the team leader
-    var teamLeader = userRepository.findUserByEmail(request.getTeamLeaderEmail())
-      .orElseThrow( () -> {
-        log.error("User not found with email: {}", request.getTeamLeaderEmail());
-        return new UserNotFoundException("User not found with email: " + request.getTeamLeaderEmail());
-      });
-
     // validate that we have GID mappings for all events in the combo
     Set<Long> comboEventIds = combo.getEvents().stream()
       .map(Event::getId)
@@ -145,6 +135,11 @@ public class TeamService {
       log.error("Missing GID mappings for some events in the combo: {}", combo.getName());
       throw new TeamRegistrationException("You must provide GID list for all events in the combo: " + combo.getName());
     }
+
+		// convert ContactDTOs to Contact entities
+		List<Team.Contact> contactEntities = request.getContacts().stream()
+			.map(contactDTO -> new Team.Contact(contactDTO.getName(), contactDTO.getContact()))
+			.toList();
 
     // create a list to hold all the team responses
     List<TeamResponse> teamResponses = new ArrayList<>();
@@ -187,9 +182,8 @@ public class TeamService {
       var team = Team.builder()
         .teamName(request.getTeamName())
         .event(event)
-        .teamLeader(teamLeader)
+        .contacts(contactEntities)
         .gidList(eventGids)
-        .contact(request.getContact())
         .isPaid(false)
         .hasPlayed(false)
         .build();
@@ -200,8 +194,11 @@ public class TeamService {
       // add to response list
       teamResponses.add(TeamResponse.fromTeam(savedTeam));
 
-      // send email to the team leader
-      emailService.sendEventRegistration(teamLeader.getEmail(), event.getName(), team.getTeamName(), team.getTid());
+			// fetch emails of all the team members registered with GID
+			List<String> teamMemberEmails = mrdRepository.findUserEmailListByGidList(savedTeam.getGidList());
+
+			// send email to all the team members
+			emailService.sendEventRegistration(teamMemberEmails.toArray(new String[0]), event.getName(), team.getTeamName(), team.getTid());
     }
 
     if (teamResponses.isEmpty()) {
@@ -234,21 +231,23 @@ public class TeamService {
   public List<TeamResponse> getTeamsByUser(String email) {
     log.info("Fetching teams for user with email: {}", email);
 
-    // find the user
-    var user = userRepository.findUserByEmail(email)
-      .orElseThrow( () -> {
-        log.error("User not found with email: {}", email);
-        return new UserNotFoundException("User not found with email: " + email);
-      });
+    // get the user's GIDs from MRD
+		var userGids = mrdRepository.findGidListByUserEmail(email);
 
-    // fetch all teams where the user is the team leader
-    var teams = teamRepository.findByTeamLeader(user);
-    
-    // return a List of TeamResponse builder object
-    return teams.stream()
-      .map(TeamResponse::fromTeam)
-      .toList();
-  }
+		if (userGids.isEmpty()) {
+			log.error("No GIDs found for user with email: {}", email);
+			throw new UserNotFoundException("No GIDs found for user with email: " + email);
+		}
+
+		// fetch all teams where any of the user's GIDs are present
+		var teams = teamRepository.findByGidListContaining(userGids);
+		log.info("Found {} teams for user with email: {}", teams.size(), email);
+
+		// return a List of TeamResponse builder object
+		return teams.stream()
+			.map(TeamResponse::fromTeam)
+			.toList();
+	}
 
   public TeamResponse getTeamByTid(String tid) {
     log.info("Fetching team with TID: {}", tid);
