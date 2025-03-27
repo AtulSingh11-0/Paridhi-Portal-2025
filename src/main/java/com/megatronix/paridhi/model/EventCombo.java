@@ -6,6 +6,7 @@ import java.util.Set;
 
 import com.megatronix.paridhi.constant.Domain;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -39,7 +40,12 @@ public class EventCombo {
   @Enumerated(EnumType.STRING)
   private Domain domain;
 
-  @ManyToMany
+  @ManyToMany(
+		cascade = {
+			CascadeType.PERSIST,
+			CascadeType.MERGE
+		}
+	)
   @JoinTable(
     name = "event_combo_mappings",
     joinColumns = @JoinColumn(name = "combo_id"),
