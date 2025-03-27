@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.angus.mail.handlers.text_html;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -69,7 +70,12 @@ public class User implements UserDetails {
     @Column(name = "roll_no")
     private String rollNo;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(
+			mappedBy = "user", 
+			cascade = CascadeType.ALL, 
+			fetch = FetchType.EAGER,
+			orphanRemoval = true
+		)
     private List<MRD> gids = new ArrayList<>();
 
     @Builder.Default
