@@ -44,8 +44,6 @@ public class EventRequest {
     @NotNull(message = "Coordinator details cannot be empty")
     private List<String> coordinatorDetails;
     
-    private String eventPictureUrl;
-    
     private String ruleBook;
     
     @NotNull(message = "Min players cannot be null")

@@ -53,9 +53,10 @@ public class Event {
     name = "event_coordinator_details", 
     joinColumns = @JoinColumn(name = "event_id")
   )
+	@Builder.Default
   private List<String> coordinatorDetails = new ArrayList<>();
-
-  private String eventPictureUrl;
+  private String eventPictureSecureUrl;
+	private String eventPicturePublicId;
   private String ruleBook; // PDF drive link
   private Integer minPlayers;
   private Integer maxPlayers;

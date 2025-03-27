@@ -2,6 +2,7 @@ package com.megatronix.paridhi.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.megatronix.paridhi.constant.Domain;
@@ -27,7 +28,7 @@ public class EventResponse {
   private String description;
   private String venue;
   private List<String> coordinatorDetails;
-  private String eventPictureUrl;
+  private Map<String, String> imageDetails;
   private String ruleBook;
   private Integer minPlayers;
   private Integer maxPlayers;
@@ -50,7 +51,10 @@ public class EventResponse {
     .description(event.getDescription())
     .venue(event.getVenue())
     .coordinatorDetails(event.getCoordinatorDetails())
-    .eventPictureUrl(event.getEventPictureUrl())
+    .imageDetails(Map.of(
+			"secure_url", event.getEventPictureSecureUrl(),
+			"public_id", event.getEventPicturePublicId() == null ? "" : event.getEventPicturePublicId()
+		))
     .ruleBook(event.getRuleBook())
     .minPlayers(event.getMinPlayers())
     .maxPlayers(event.getMaxPlayers())

@@ -3,6 +3,7 @@ package com.megatronix.paridhi.controller;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.megatronix.paridhi.constant.Domain;
 import com.megatronix.paridhi.constant.EventType;
@@ -64,7 +66,7 @@ public class EventController {
 
   // Authorized endpoints
 
-  @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @PostMapping()
   public ResponseEntity<EventResponse> createEvent(
     @Valid @RequestBody EventRequest request,
@@ -73,7 +75,7 @@ public class EventController {
     return ResponseEntity.status(HttpStatus.CREATED).body(eventService.createEvent(request, user));
   }
 
-  @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @PutMapping("/{id}")
   public ResponseEntity<EventResponse> updateEvent(
     @PathVariable Long id,
@@ -83,7 +85,20 @@ public class EventController {
     return ResponseEntity.ok(eventService.updateEvent(id, request, user));
   }
 
-  @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+	@PutMapping(
+		value = "/{id}/upload",
+		consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+	)
+	public ResponseEntity<EventResponse> updateEventImage(
+		@PathVariable Long id,
+		@RequestParam("file") MultipartFile file,
+		@AuthenticationPrincipal User user
+	) {
+		return ResponseEntity.ok(eventService.updateEventImage(id, file, user));
+	}
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteEvent(
     @PathVariable Long id,
@@ -93,7 +108,7 @@ public class EventController {
     return ResponseEntity.noContent().build();
   }
 
-  @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @PatchMapping("/{id}/status")
   public ResponseEntity<EventResponse> updateEventStatus(
     @PathVariable Long id,
