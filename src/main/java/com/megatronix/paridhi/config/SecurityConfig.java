@@ -31,24 +31,29 @@ public class SecurityConfig {
   private final UserDetailsServiceImpl userDetailsService;
   private final JwtAuthenticationEntryPoint jwtAuthEntryPoint;
 
+	private static final String[] WHITELISTED_URLS = {
+		"/", // Landing page
+		"/api/auth/**", // Authentication endpoints
+		"/api/profiles/**", // Profile endpoints
+		"/api/mrd/register", // MRD registration endpoint
+		"/api/events", // Event endpoints
+		"/api/events/{id}", // Specific event endpoint
+		"/api/events/status", // Event status endpoints
+		"/api/events/type/**", // Event type endpoints
+		"/api/events/domains/**", // Event domain endpoints
+		"/api/combos", // Combo endpoints
+		"/api/combos/{id}", // Specific combo endpoint
+		"/api/combos/status", // Combo status endpoints
+		"/api/combos/domains/**" // Combo domain endpoints
+	};
+
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http
       .cors(Customizer.withDefaults())
       .csrf(AbstractHttpConfigurer::disable)
       .authorizeHttpRequests(auth -> auth
-        .requestMatchers("/api/auth/**").permitAll()
-        .requestMatchers("/").permitAll()
-        .requestMatchers("/api/events").permitAll() // Allow public access to view events
-        .requestMatchers("/api/events/domains/**").permitAll() // Allow access to view events by domain
-        .requestMatchers("/api/events/type/**").permitAll() // Allow access to view events by type
-        .requestMatchers("/api/events/{id}").permitAll() // Allow access to view specific event
-        .requestMatchers("/api/combos").permitAll() // Allow public access to view combos
-        .requestMatchers("/api/combos/{id}").permitAll() // Allow public access to view specific combo
-        .requestMatchers("/api/combos/domains/**").permitAll() // Allow public access to view combos by domain
-        .requestMatchers("/api/combos/status").permitAll() // Allow public access to view combos by status
-        .requestMatchers("/api/mrd/register").permitAll() // Allow public access to register for MRD
-				.requestMatchers("/api/profiles/**").permitAll()
+				.requestMatchers(WHITELISTED_URLS).permitAll()
         .anyRequest().authenticated()
       )
       .exceptionHandling(exception -> exception
