@@ -225,6 +225,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
 	}
 
+	@ExceptionHandler(FileUploadException.class)
+	public ResponseEntity<ErrorResponse> handleFileUploadException(
+		FileUploadException exception,
+		HttpServletRequest request
+	) {
+		ErrorResponse errorResponse = ErrorResponse.builder()
+			.status(HttpStatus.BAD_REQUEST.value())
+			.message(exception.getMessage())
+			.error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+			.timestamp(LocalDateTime.now())
+			.path(request.getRequestURI())
+			.build();
+
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+	}
+
 	@ExceptionHandler(InvalidOtpException.class)
 	public ResponseEntity<ErrorResponse> handleInvalidOtpException(
 		InvalidOtpException exception,
@@ -354,9 +370,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	) {
 		log.error("Invalid parameter type: {}", exception.getMessage());
 
-		String expectedType = exception.getRequiredType() != null
-			? exception.getRequiredType().getSimpleName()
-			: "unknown";
+		String expectedType = "unknown";
+		if (exception.getRequiredType() != null) {
+			expectedType = exception.getRequiredType().getSimpleName();
+		}
 
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.BAD_REQUEST.value())

@@ -1,8 +1,11 @@
 package com.megatronix.paridhi.service;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.megatronix.paridhi.constant.Domain;
 import com.megatronix.paridhi.constant.EventType;
@@ -10,10 +13,15 @@ import com.megatronix.paridhi.constant.Role;
 import com.megatronix.paridhi.dto.request.EventRequest;
 import com.megatronix.paridhi.dto.response.EventResponse;
 import com.megatronix.paridhi.exception.EventNotFoundException;
+import com.megatronix.paridhi.exception.FileUploadException;
 import com.megatronix.paridhi.exception.ForbiddenAccessException;
 import com.megatronix.paridhi.model.Event;
+import com.megatronix.paridhi.model.EventCombo;
+import com.megatronix.paridhi.model.Team;
 import com.megatronix.paridhi.model.User;
+import com.megatronix.paridhi.repository.ComboRepository;
 import com.megatronix.paridhi.repository.EventRepository;
+import com.megatronix.paridhi.repository.TeamRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +30,10 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class EventService {
+	private final TeamRepository teamRepository;
   private final EventRepository eventRepository;
+	private final ComboRepository comboRepository;
+	private final CloudinaryService cloudinaryService;
   
   public EventResponse createEvent(EventRequest request, User user) {
     // create event from request
@@ -40,7 +51,7 @@ public class EventService {
       .description(request.getDescription())
       .venue(request.getVenue())
       .coordinatorDetails(request.getCoordinatorDetails())
-      .eventPictureUrl(request.getEventPictureUrl())
+      .eventPictureSecureUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSxrgoLK49zGt45fybNVJfpDUt4otbtAfmWbg&s")
       .ruleBook(request.getRuleBook())
       .minPlayers(request.getMinPlayers())
       .maxPlayers(request.getMaxPlayers())
@@ -124,7 +135,6 @@ public class EventService {
     existingEvent.setDescription(request.getDescription());
     existingEvent.setVenue(request.getVenue());
     existingEvent.setCoordinatorDetails(request.getCoordinatorDetails());
-    existingEvent.setEventPictureUrl(request.getEventPictureUrl());
     existingEvent.setRuleBook(request.getRuleBook());
     existingEvent.setMinPlayers(request.getMinPlayers());
     existingEvent.setMaxPlayers(request.getMaxPlayers());
@@ -145,17 +155,40 @@ public class EventService {
     // delete event by ID from database
     log.info("Deleting event with ID: {}", eventId);
 
-    // check if event exists
-    if (!eventRepository.existsById(eventId)) {
-      log.error("Event with ID {} not found", eventId);
-      throw new EventNotFoundException("Event not found with ID: " + eventId);
-    }
+    // get event by ID
+		var existingEvent = eventRepository.findById(eventId)
+			.orElseThrow( () -> {
+				log.error("Event with ID {} not found", eventId);
+				return new EventNotFoundException("Event not found with ID: " + eventId);
+			});
 
     // check if the user has permission to delete event
     checkUserAccess(user, "delete");
 
+		// handle teams that reference this event
+		List<Team> teams = teamRepository.findByEvent(existingEvent);
+		if (!teams.isEmpty()) {
+			log.info("Found {} teams registered for event: {}. Deleting teams...", teams.size(), existingEvent.getName());
+			teamRepository.deleteAll(teams);			
+		}
+
+		//handle many-to-many relationship with combo
+		Set<EventCombo> combos = comboRepository.findByEventsContaining(existingEvent);
+		for (EventCombo combo : combos) {
+			combo.getEvents().remove(existingEvent);
+			if (combo.getEvents().size() < 2) {
+				comboRepository.delete(combo);
+			} else {
+				comboRepository.save(combo);
+			}
+		}
+
     // delete event from database
-    eventRepository.deleteById(eventId);
+		if (existingEvent.getEventPicturePublicId() != null) {
+			// delete image from cloudinary
+			cloudinaryService.deleteFile(existingEvent.getEventPicturePublicId());
+		}
+    eventRepository.delete(existingEvent);
     log.info("Event deleted with ID: {}", eventId);
   }
 
@@ -179,6 +212,41 @@ public class EventService {
     // return an EventResponse object
     return EventResponse.fromEvent(updatedEvent);
   }
+
+	@Transactional
+	public EventResponse updateEventImage(Long id, MultipartFile file, User user) {
+		log.info("Updating event image for event with ID: {}, by: {}", id, user);
+
+		// check if user has permission
+		checkUserAccess(user, "update image of");
+
+		// fetch event by ID
+		var existingEvent = eventRepository.findById(id)
+			.orElseThrow( () -> {
+				log.error("Event with ID {} not found", id);
+				return new EventNotFoundException("Event not found with ID: " + id);
+			});
+
+		// upload image to cloudinary
+		try {
+			var imageDetails = cloudinaryService.uploadFile(file);
+
+			// update event image URL
+			existingEvent.setEventPictureSecureUrl(imageDetails.get("secure_url"));
+			existingEvent.setEventPicturePublicId(imageDetails.get("public_id"));
+			existingEvent.setUpdatedBy(user);
+
+			// save updated event to database
+			var updatedEvent = eventRepository.save(existingEvent);
+			log.info("Event image updated: {}", updatedEvent);
+
+			// return an EventResponse object
+			return EventResponse.fromEvent(updatedEvent);
+		} catch (Exception e) {
+			log.error("Error updating event image: {}", e.getMessage());
+      throw new FileUploadException("Error updating event image: " + e.getMessage(), e.getCause());
+		}
+	}
 
   private void checkUserAccess(User user, String methodType) {
     log.info("User: {}", user);
