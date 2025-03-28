@@ -34,7 +34,6 @@ public class SecurityConfig {
 	private static final String[] WHITELISTED_URLS = {
 		"/", // Landing page
 		"/api/auth/**", // Authentication endpoints
-		"/api/profiles/**", // Profile endpoints
 		"/api/mrd/register", // MRD registration endpoint
 		"/api/events", // Event endpoints
 		"/api/events/{id}", // Specific event endpoint
