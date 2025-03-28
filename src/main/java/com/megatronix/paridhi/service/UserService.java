@@ -54,7 +54,6 @@ public class UserService {
 				.password(passwordEncoder.encode(request.getPassword()))
 				.role(request.getRole())
 				.createdAt(LocalDateTime.now())
-				.isVerified(false)
 				.build();
 
 		User savedUser = userRepository.save(user);
@@ -143,7 +142,6 @@ public class UserService {
 				.password(passwordEncoder.encode(request.getPassword()))
 				.role(request.getRole())
 				.createdAt(LocalDateTime.now())
-				.isVerified(false)
 				.build();
 
 		User savedUser = userRepository.save(user);
