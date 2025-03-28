@@ -50,7 +50,6 @@ public class MRDService {
     .year(user.getYear())
     .department(user.getDepartment())
     .rollNo(user.getRollNo())
-    .isPaid(false)
     .build();
 
     // save the MRD registration
