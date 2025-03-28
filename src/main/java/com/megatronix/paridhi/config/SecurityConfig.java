@@ -44,7 +44,10 @@ public class SecurityConfig {
 		"/api/combos", // Combo endpoints
 		"/api/combos/{id}", // Specific combo endpoint
 		"/api/combos/status", // Combo status endpoints
-		"/api/combos/domains/**" // Combo domain endpoints
+		"/api/combos/domains/**", // Combo domain endpoints
+		"/api/galleries", // Gallery endpoints
+		"/api/galleries/featured", // Featured gallery endpoints
+		"/api/galleries/{id}", // Specific gallery endpoint
 	};
 
   @Bean

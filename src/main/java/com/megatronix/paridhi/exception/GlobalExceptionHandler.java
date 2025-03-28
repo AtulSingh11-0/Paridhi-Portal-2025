@@ -204,6 +204,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
 	}
 
+	@ExceptionHandler(GalleryNotFoundException.class)
+	public ResponseEntity<ErrorResponse> handleGalleryNotFoundException(
+		GalleryNotFoundException exception,
+		HttpServletRequest request
+	) {
+		ErrorResponse errorResponse = ErrorResponse.builder()
+			.status(HttpStatus.NOT_FOUND.value())
+			.message(exception.getMessage())
+			.error(HttpStatus.NOT_FOUND.getReasonPhrase())
+			.timestamp(LocalDateTime.now())
+			.path(request.getRequestURI())
+			.build();
+
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+	}
+
 	/************************************************************** NOT FOUND EXCEPTION's **************************************************************/
 
 
@@ -471,7 +487,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		log.error("Access denied: {}", exception.getMessage());
 		ErrorResponse errorResponse = ErrorResponse.builder()
 			.status(HttpStatus.FORBIDDEN.value())
-			.message("You don't have permission to access this resource: {}" + exception.getMessage())
+			.message("You don't have permission to access this resource: " + exception.getMessage())
 			.error(HttpStatus.FORBIDDEN.getReasonPhrase())
 			.timestamp(LocalDateTime.now())
 			.path(request.getRequestURI())
