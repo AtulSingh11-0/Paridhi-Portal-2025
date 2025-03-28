@@ -241,6 +241,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
 	}
 
+	@ExceptionHandler(ProfileNotYetCreatedException.class)
+	public ResponseEntity<ErrorResponse> handleProfileNotYetCreatedException(
+		ProfileNotYetCreatedException exception,
+		HttpServletRequest request
+	) {
+		ErrorResponse errorResponse = ErrorResponse.builder()
+			.status(HttpStatus.BAD_REQUEST.value())
+			.message(exception.getMessage())
+			.error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+			.timestamp(LocalDateTime.now())
+			.path(request.getRequestURI())
+			.build();
+
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+	}
+
 	@ExceptionHandler(FileUploadException.class)
 	public ResponseEntity<ErrorResponse> handleFileUploadException(
 		FileUploadException exception,
@@ -552,6 +568,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(UserAlreadyVerifiedException.class)
 	public ResponseEntity<ErrorResponse> handleUserAlreadyVerifiedException(
 		UserAlreadyVerifiedException exception,
+		HttpServletRequest request
+	) {
+		ErrorResponse errorResponse = ErrorResponse.builder()
+			.status(HttpStatus.CONFLICT.value())
+			.message(exception.getMessage())
+			.error(HttpStatus.CONFLICT.getReasonPhrase())
+			.timestamp(LocalDateTime.now())
+			.path(request.getRequestURI())
+			.build();
+
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+	}
+
+	@ExceptionHandler(ProfileAlreadyExistsException.class)
+	public ResponseEntity<ErrorResponse> handleProfileAlreadyExistsException(
+		ProfileAlreadyExistsException exception,
 		HttpServletRequest request
 	) {
 		ErrorResponse errorResponse = ErrorResponse.builder()
