@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.angus.mail.handlers.text_html;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -41,111 +40,115 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Table(name = "users")
 public class User implements UserDetails {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Column(nullable = false)
-    private String name;
+	@Column(nullable = false)
+	private String name;
 
-    @Column(unique = true, nullable = false)
-    private String email;
+	@Column(unique = true, nullable = false)
+	private String email;
 
-    @Column(nullable = false, length = 64)
-    private String password;
+	@Column(nullable = false, length = 64)
+	private String password;
 
-    private String profilePicture;
+	private String profilePicture;
 
-    @Column(length = 10)
-    private String contact;
+	@Column(length = 10)
+	private String contact;
 
-    private String college;
+	private String college;
 
-    @Enumerated(EnumType.STRING)
-    private Year year;
+	@Enumerated(EnumType.STRING)
+	private Year year;
 
-    @Enumerated(EnumType.STRING)
-    private Department department;
+	@Enumerated(EnumType.STRING)
+	private Department department;
 
-    @Column(name = "roll_no")
-    private String rollNo;
+	@Column(name = "roll_no")
+	private String rollNo;
 
-    @OneToMany(
-			mappedBy = "user", 
-			cascade = CascadeType.ALL, 
-			fetch = FetchType.EAGER,
-			orphanRemoval = true
-		)
-    private List<MRD> gids = new ArrayList<>();
+	@OneToMany(
+		mappedBy = "user", 
+		cascade = CascadeType.ALL, 
+		fetch = FetchType.EAGER,
+		orphanRemoval = true
+	)
+	@Builder.Default
+	private List<MRD> gids = new ArrayList<>();
 
-    @Builder.Default
-    private boolean isPaid = false;
+	@Builder.Default
+	private boolean isPaid = false;
 
-    @Builder.Default
-    private boolean isVerified = false;
+	@Builder.Default
+	private boolean isVerified = false;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Role role;
+	@Builder.Default
+	private boolean isProfileCreated = false;
 
-    private LocalDateTime lastLogin;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private Role role;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+	private LocalDateTime lastLogin;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+	@Column(name = "created_at", nullable = false, updatable = false)
+	private LocalDateTime createdAt;
 
-    @JsonIgnore
-    public List<String> getGids() {
-        if (gids == null) {
-            return new ArrayList<>();
-        }
-        return gids.stream()
-            .map(MRD::getGid)
-            .toList();
-    }
+	@Column(name = "updated_at")
+	private LocalDateTime updatedAt;
 
-    @PrePersist
-    protected void createdAt() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
+	@JsonIgnore
+	public List<String> getGids() {
+		if (gids == null) {
+			return new ArrayList<>();
+		}
+		return gids.stream()
+			.map(MRD::getGid)
+			.toList();
+	}
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+	@PrePersist
+	protected void createdAt() {
+		this.createdAt = LocalDateTime.now();
+		this.updatedAt = LocalDateTime.now();
+	}
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(
-            new SimpleGrantedAuthority(this.role.name())
-        );
-    }
+	@PreUpdate
+	protected void onUpdate() {
+		this.updatedAt = LocalDateTime.now();
+	}
 
-    @Override
-    public String getUsername() {
-        return this.email;
-    }
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		return Collections.singletonList(
+			new SimpleGrantedAuthority(this.role.name())
+		);
+	}
 
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
+	@Override
+	public String getUsername() {
+		return this.email;
+	}
 
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
+	@Override
+	public boolean isAccountNonExpired() {
+		return true;
+	}
 
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
+	@Override
+	public boolean isAccountNonLocked() {
+		return true;
+	}
 
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
+	@Override
+	public boolean isCredentialsNonExpired() {
+		return true;
+	}
+
+	@Override
+	public boolean isEnabled() {
+		return true;	
+	}
 }
