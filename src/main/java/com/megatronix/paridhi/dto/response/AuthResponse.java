@@ -1,7 +1,9 @@
 package com.megatronix.paridhi.dto.response;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.megatronix.paridhi.constant.Department;
 import com.megatronix.paridhi.constant.Year;
 import com.megatronix.paridhi.model.User;
@@ -35,6 +37,13 @@ public class AuthResponse {
 		private List<String> gids;
 		private boolean isPaid;
 		private boolean isVerified;
+		private boolean isProfileCreated;
+		@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+		private LocalDateTime lastLogin;
+		@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+		private LocalDateTime createdAt;
+		@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+		private LocalDateTime updatedAt;
 
 		public static UserDto fromUser(User user) {
 			return UserDto.builder()
@@ -50,6 +59,10 @@ public class AuthResponse {
 				.gids(user.getGids())
 				.isPaid(user.isPaid())
 				.isVerified(user.isVerified())
+				.isProfileCreated(user.isProfileCreated())
+				.lastLogin(user.getLastLogin())
+				.createdAt(user.getCreatedAt())
+				.updatedAt(user.getUpdatedAt())
 				.build();
 		}
 	}
