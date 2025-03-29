@@ -65,15 +65,22 @@ public class MRDService {
 
   public List<MRDResponse> getUserMRDs(String email, User user) {
     // check if the user has ROLE_USER and if USER then check if they have authority to access the resource
-    checkUserAccess(user, email, "fetch MRDs");
+    checkUserAccess(user, "fetch MRDs");
     log.info("Fetching MRDs for user with email: {} and role: {}", email, user.getRole());
 
-    var mrds = mrdRepository.findAllByUser(user);
+		// find the user
+		var existingUser = userRepository.findUserByEmail(email)
+			.orElseThrow(() -> {
+				log.error("User not found with email: {}", email);
+				return new UserNotFoundException("User not found with email: " + email);
+			});
+
+    var mrds = mrdRepository.findAllByUser(existingUser);
     log.info("Fetched {} MRDs for user with email: {}", mrds.size(), email);
 
     return mrds.stream()
-        .map(this::mapToResponse)
-        .toList();
+			.map(this::mapToResponse)
+			.toList();
   }
 
   public MRDResponse updatePaymentStatus(String gid, User user) {
@@ -96,10 +103,18 @@ public class MRDService {
 
   public List<String> getUserGids(String email, User user) {
     // check if the user has ROLE_USER and if USER then check if they have authority to access the resource
-    checkUserAccess(user, email, "fetch GIDs");
+    checkUserAccess(user, "fetch GIDs");
     
     log.info("Fetching GIDs for user with email: {}", email);
-    var mrds = mrdRepository.findAllByUser(user);
+
+		// find the user
+		var existingUser = userRepository.findUserByEmail(email)
+			.orElseThrow(() -> {
+				log.error("User not found with email: {}", email);
+				return new UserNotFoundException("User not found with email: " + email);
+			});
+
+    var mrds = mrdRepository.findAllByUser(existingUser);
     log.info("Fetched {} MRDs for user with email: {}", mrds.size(), email);
 
     List<String> gids = mrds.stream()
@@ -134,13 +149,6 @@ public class MRDService {
     if (user.getRole().equals(Role.ROLE_USER)) {
       log.error("User with ID {} not authorized to {}", user.getId(), methodName);
       throw new ForbiddenAccessException("User not authorized to  " + methodName);
-    }
-  }
-
-  private void checkUserAccess(User user, String email, String methodName) {
-    if (user.getRole().equals(Role.ROLE_USER) && !user.getEmail().equals(email)) {
-      log.error("User with ID: {} not authorized to {} for email: {}", user.getId(), methodName, email);
-      throw new ForbiddenAccessException("User not authorized to " + methodName);
     }
   }
 }
