@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MRDRequest {
-    @NotBlank(message = "Email cannot be empty")
-    @Email(message = "Email should be valid")
-    private String email;
+	@NotBlank(message = "Email cannot be empty")
+	@Email(message = "Email should be valid")
+	private String email;
 }
