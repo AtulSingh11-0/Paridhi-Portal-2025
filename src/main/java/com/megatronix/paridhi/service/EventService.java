@@ -56,7 +56,6 @@ public class EventService {
       .minPlayers(request.getMinPlayers())
       .maxPlayers(request.getMaxPlayers())
       .registrationFee(request.getRegistrationFee())
-      .isRegistrationOpen(request.isRegistrationOpen())
       .prizePool(request.getPrizePool())
       .createdBy(user)
       .updatedBy(null)
@@ -139,7 +138,6 @@ public class EventService {
     existingEvent.setMinPlayers(request.getMinPlayers());
     existingEvent.setMaxPlayers(request.getMaxPlayers());
     existingEvent.setRegistrationFee(request.getRegistrationFee());
-    existingEvent.setRegistrationOpen(request.isRegistrationOpen());
     existingEvent.setPrizePool(request.getPrizePool());
     existingEvent.setUpdatedBy(user);
 
