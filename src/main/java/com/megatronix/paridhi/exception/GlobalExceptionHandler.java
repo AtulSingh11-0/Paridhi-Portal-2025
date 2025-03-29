@@ -220,6 +220,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
 	}
 
+	@ExceptionHandler(MemberProfileNotFoundException.class)
+	public ResponseEntity<ErrorResponse> handleMemberProfileNotFoundException(
+		MemberProfileNotFoundException exception,
+		HttpServletRequest request
+	) {
+		ErrorResponse errorResponse = ErrorResponse.builder()
+			.status(HttpStatus.NOT_FOUND.value())
+			.message(exception.getMessage())
+			.error(HttpStatus.NOT_FOUND.getReasonPhrase())
+			.timestamp(LocalDateTime.now())
+			.path(request.getRequestURI())
+			.build();
+
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+	}
+
 	/************************************************************** NOT FOUND EXCEPTION's **************************************************************/
 
 
@@ -244,6 +260,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(ProfileNotYetCreatedException.class)
 	public ResponseEntity<ErrorResponse> handleProfileNotYetCreatedException(
 		ProfileNotYetCreatedException exception,
+		HttpServletRequest request
+	) {
+		ErrorResponse errorResponse = ErrorResponse.builder()
+			.status(HttpStatus.BAD_REQUEST.value())
+			.message(exception.getMessage())
+			.error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+			.timestamp(LocalDateTime.now())
+			.path(request.getRequestURI())
+			.build();
+
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+	}
+
+	@ExceptionHandler(MemberProfileAlreadyExistsException.class)
+	public ResponseEntity<ErrorResponse> handleMemberProfileAlreadyExistsException(
+		MemberProfileAlreadyExistsException exception,
 		HttpServletRequest request
 	) {
 		ErrorResponse errorResponse = ErrorResponse.builder()

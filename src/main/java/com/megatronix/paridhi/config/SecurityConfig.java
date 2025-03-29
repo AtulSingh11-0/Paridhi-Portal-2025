@@ -47,6 +47,7 @@ public class SecurityConfig {
 		"/api/galleries", // Gallery endpoints
 		"/api/galleries/featured", // Featured gallery endpoints
 		"/api/galleries/{id}", // Specific gallery endpoint
+		"/api/megatronix-team/", // Megatronix team-member endpoints
 	};
 
   @Bean
