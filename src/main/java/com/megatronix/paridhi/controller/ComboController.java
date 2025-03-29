@@ -3,6 +3,7 @@ package com.megatronix.paridhi.controller;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.megatronix.paridhi.constant.Domain;
 import com.megatronix.paridhi.dto.request.ComboRequest;
@@ -66,7 +68,7 @@ public class ComboController {
 
   // Authorized endpoints
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPERADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @PostMapping
   public ResponseEntity<ComboResponse> createCombo(
     @Valid @RequestBody ComboRequest request,
@@ -76,7 +78,7 @@ public class ComboController {
       .body(comboService.createCombo(request, user));
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPERADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @PutMapping("/{id}")
   public ResponseEntity<ComboResponse> updateCombo(
     @PathVariable Long id,
@@ -86,7 +88,7 @@ public class ComboController {
     return ResponseEntity.ok(comboService.updateCombo(id, request, user));
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPERADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteCombo(
     @PathVariable Long id,
@@ -96,7 +98,7 @@ public class ComboController {
     return ResponseEntity.noContent().build();
   }
 
-  @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPERADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @PatchMapping("/{id}/status")
   public ResponseEntity<ComboResponse> toggleComboStatus(
     @PathVariable Long id,
@@ -104,6 +106,19 @@ public class ComboController {
   ) {
     return ResponseEntity.ok(comboService.toggleComboStatus(id, user));
   }
+
+	@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+	@PutMapping(
+		value = "/{id}/upload",
+		consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+	)
+	public ResponseEntity<ComboResponse> updateComboImage(
+		@PathVariable Long id,
+		@RequestParam("file") MultipartFile file,
+		@AuthenticationPrincipal User user
+	) {
+		return ResponseEntity.ok(comboService.updateComboImage(id, file, user));
+	}
 
   // Registration endpoint for combos
   @PostMapping("/register")

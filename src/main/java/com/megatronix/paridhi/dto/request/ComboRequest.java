@@ -31,5 +31,4 @@ public class ComboRequest {
   @NotNull(message = "Registration fee cannot be null")
   @Min(value = 0, message = "Registration fee cannot be negative")
   private Double registrationFee;
-  private boolean isRegistrationOpen;
 }

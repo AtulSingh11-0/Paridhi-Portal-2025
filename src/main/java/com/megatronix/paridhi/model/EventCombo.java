@@ -59,6 +59,9 @@ public class EventCombo {
   @Column(length = 2000)
   private String description;
 
+	private String comboPictureSecureUrl;
+	private String comboPicturePublicId;
+
   private Double registrationFee;
   private boolean isRegistrationOpen;
   private LocalDateTime createdAt;

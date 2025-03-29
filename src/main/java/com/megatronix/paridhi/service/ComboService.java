@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.megatronix.paridhi.constant.Domain;
 import com.megatronix.paridhi.constant.Role;
@@ -12,6 +13,7 @@ import com.megatronix.paridhi.dto.request.ComboRequest;
 import com.megatronix.paridhi.dto.response.ComboResponse;
 import com.megatronix.paridhi.exception.ComboNotFoundException;
 import com.megatronix.paridhi.exception.EventNotFoundException;
+import com.megatronix.paridhi.exception.FileUploadException;
 import com.megatronix.paridhi.exception.ForbiddenAccessException;
 import com.megatronix.paridhi.exception.InvalidDomainException;
 import com.megatronix.paridhi.model.EventCombo;
@@ -28,16 +30,14 @@ import lombok.extern.slf4j.Slf4j;
 public class ComboService {
   private final ComboRepository comboRepository;
   private final EventRepository eventRepository;
+	private final CloudinaryService cloudinaryService;
 
   @Transactional
   public ComboResponse createCombo(ComboRequest request, User user) {
     log.info("Creating combo: {}", request);
 
     // check if user has permission to create combo
-    if ( user.getRole().equals(Role.ROLE_USER) ) {
-      log.error("User with ID {} not authorized to create combo", user.getId());
-      throw new ForbiddenAccessException("User not authorized to create combo");
-    }
+    checkUserAccess(user, "create");
 
     // get events from IDs
     var events = eventRepository.findAllById(request.getEventIds());
@@ -63,8 +63,8 @@ public class ComboService {
       .description(request.getDescription())
       .domain(request.getDomain())
       .events(new HashSet<>(events))
+			.comboPictureSecureUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSxrgoLK49zGt45fybNVJfpDUt4otbtAfmWbg&s")
       .registrationFee(request.getRegistrationFee())
-      .isRegistrationOpen(request.isRegistrationOpen())
       .createdBy(user)
       .build();
     var savedCombo = comboRepository.save(combo);
@@ -109,10 +109,7 @@ public class ComboService {
     log.info("Updating combo with ID: {} by: {}", id, user);
 
     // check if user has permission
-    if (user.getRole().equals(Role.ROLE_USER)) {
-      log.error("User with ID {} not authorized to update combo", user.getId());
-      throw new ForbiddenAccessException("User not authorized to update combo");
-    }
+    checkUserAccess(user, "update");
 
     // find the combo
     var combo = comboRepository.findById(id)
@@ -145,7 +142,6 @@ public class ComboService {
     combo.setDomain(request.getDomain());
     combo.setEvents(new HashSet<>(events));
     combo.setRegistrationFee(request.getRegistrationFee());
-    combo.setRegistrationOpen(request.isRegistrationOpen());
     combo.setUpdatedBy(user);
 
     // save and return the combo
@@ -155,21 +151,63 @@ public class ComboService {
     return ComboResponse.fromCombo(updatedCombo);
   }
 
+	@Transactional
+	public ComboResponse updateComboImage(Long id, MultipartFile file, User user) {
+		log.info("Updating combo image for combo with ID: {}, by: {}", id, user.getEmail());
+
+		// Check access permissions
+		checkUserAccess(user, "update image of");
+
+		// Get combo by ID
+		var existingCombo = comboRepository.findById(id)
+			.orElseThrow(() -> {
+				log.error("Combo with ID {} not found", id);
+				return new ComboNotFoundException("Combo not found with ID: " + id);
+			});
+		
+		try {
+			// Delete old image if it exists
+			if (existingCombo.getComboPicturePublicId() != null) {
+				cloudinaryService.deleteFile(existingCombo.getComboPicturePublicId());
+			}
+
+			// Upload new image to Cloudinary
+			var imageDetails = cloudinaryService.uploadFile(file);
+			
+			// Update combo image fields
+			existingCombo.setComboPictureSecureUrl(imageDetails.get("secure_url"));
+			existingCombo.setComboPicturePublicId(imageDetails.get("public_id"));
+			existingCombo.setUpdatedBy(user);
+			
+			// Save updated combo
+			var updatedCombo = comboRepository.save(existingCombo);
+			log.info("Combo image updated successfully for ID: {}", updatedCombo.getId());
+			
+			return ComboResponse.fromCombo(updatedCombo);
+		} catch (Exception e) {
+			log.error("Error updating combo image: {}", e.getMessage());
+			throw new FileUploadException("Error updating combo image: " + e.getMessage(), e.getCause());
+		}
+	}
+
   @Transactional
   public void deleteCombo(Long id, User user) {
     log.info("Deleting combo with ID: {} by: {}", id, user);
 
     // check if user has permission
-    if (user.getRole().equals(Role.ROLE_USER)) {
-      log.error("User with ID {} not authorized to delete combo", user.getId());
-      throw new ForbiddenAccessException("User not authorized to delete combo");
-    }
+    checkUserAccess(user, "delete");
 
     // check if the combo exists
-    if ( !comboRepository.existsById(id) ) {
-      log.error("Combo not found with ID: {}", id);
-      throw new ComboNotFoundException("Combo not found with ID: " + id);
-    }
+    var existingCombo = comboRepository.findById(id)
+			.orElseThrow( () -> {
+				log.error("Combo not found with ID: {}", id);
+				return new ComboNotFoundException("Combo not found with ID: " + id);
+			});
+
+		// Delete image from Cloudinary if it exists
+    if (existingCombo.getComboPicturePublicId() != null) {
+			cloudinaryService.deleteFile(existingCombo.getComboPicturePublicId());
+		}
 
     // delete the combo
     comboRepository.deleteById(id);
@@ -181,10 +219,7 @@ public class ComboService {
     log.info("Toggling status for combo with ID: {} by: {}", id, user);
 
     // check if user has permission
-    if (user.getRole().equals(Role.ROLE_USER)) {
-      log.error("User with ID {} not authorized to toggle combo status", user.getId());
-      throw new ForbiddenAccessException("User not authorized to toggle combo status");
-    }
+    checkUserAccess(user, "toggle status of");
 
     // find the combo
     var combo = comboRepository.findById(id)
@@ -203,4 +238,11 @@ public class ComboService {
     
     return ComboResponse.fromCombo(updatedCombo);
   }
+
+	private void checkUserAccess(User user, String action) {
+		if (user.getRole().equals(Role.ROLE_USER)) {
+			log.error("User with ID {} not authorized to {} combo", user.getId(), action);
+			throw new ForbiddenAccessException("User not authorized to " + action + " combo");
+		}
+	}
 }

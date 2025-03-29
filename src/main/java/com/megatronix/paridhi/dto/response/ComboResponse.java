@@ -2,6 +2,7 @@ package com.megatronix.paridhi.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.megatronix.paridhi.constant.Domain;
@@ -22,6 +23,7 @@ public class ComboResponse {
   private String description;
   private Domain domain;
   private List<EventResponse> events;
+	private Map<String, String> imageDetails;
   private Double registrationFee;
   private boolean isRegistrationOpen;
 
@@ -40,8 +42,13 @@ public class ComboResponse {
       .description(combo.getDescription())
       .domain(combo.getDomain())
       .events(combo.getEvents().stream()
-              .map(EventResponse::fromEvent)
-              .toList())
+				.map(EventResponse::fromEvent)
+				.toList()
+			)
+			.imageDetails(Map.of(
+				"secure_url", combo.getComboPictureSecureUrl() == null ? "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSxrgoLK49zGt45fybNVJfpDUt4otbtAfmWbg&s" : combo.getComboPictureSecureUrl(),
+				"public_id", combo.getComboPicturePublicId() == null ? "" : combo.getComboPicturePublicId()
+			))
       .registrationFee(combo.getRegistrationFee())
       .isRegistrationOpen(combo.isRegistrationOpen())
       .createdAt(combo.getCreatedAt())
