@@ -58,6 +58,15 @@ public class MRDController {
     return ResponseEntity.ok(mrdService.getUserGids(email, user));
   }
   
+	@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+	@GetMapping("/{gid}")
+	public ResponseEntity<MRDResponse> getMRDbyGID(
+		@PathVariable String gid,
+		@AuthenticationPrincipal User user
+	) {
+		return ResponseEntity.ok(mrdService.getMRDbyGID(gid, user));
+	}
+
   @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @PatchMapping("{gid}/payment")
   public ResponseEntity<MRDResponse> updatePaymentStatus(

@@ -63,6 +63,24 @@ public class MRDService {
     return mapToResponse(savedMRD);
   }
 
+	public MRDResponse updatePaymentStatus(String gid, User user) {
+    // check if user has permission to update payment status
+    checkUserAccess(user, "update payment status");
+    
+    log.info("Updating payment status for MRD with GID: {}", gid);
+    var mrd = mrdRepository.findByGid(gid)
+    .orElseThrow(() -> {
+      log.error("GID not found: {}", gid);
+      return new GIDNotFoundException("GID not found: " + gid);
+    });
+    
+    mrd.setPaid(!mrd.isPaid());
+    MRD updatedMRD = mrdRepository.save(mrd);
+    log.info("Updated payment status for GID {}: {}", gid, updatedMRD.isPaid());
+
+    return mapToResponse(updatedMRD);
+  }
+
   public List<MRDResponse> getUserMRDs(String email, User user) {
     // check if the user has ROLE_USER and if USER then check if they have authority to access the resource
     checkUserAccess(user, "fetch MRDs");
@@ -81,24 +99,6 @@ public class MRDService {
     return mrds.stream()
 			.map(this::mapToResponse)
 			.toList();
-  }
-
-  public MRDResponse updatePaymentStatus(String gid, User user) {
-    // check if user has permission to update payment status
-    checkUserAccess(user, "update payment status");
-    
-    log.info("Updating payment status for MRD with GID: {}", gid);
-    var mrd = mrdRepository.findByGid(gid)
-    .orElseThrow(() -> {
-      log.error("GID not found: {}", gid);
-      return new GIDNotFoundException("GID not found: " + gid);
-    });
-    
-    mrd.setPaid(!mrd.isPaid());
-    MRD updatedMRD = mrdRepository.save(mrd);
-    log.info("Updated payment status for GID {}: {}", gid, updatedMRD.isPaid());
-
-    return mapToResponse(updatedMRD);
   }
 
   public List<String> getUserGids(String email, User user) {
@@ -124,6 +124,20 @@ public class MRDService {
     log.info("Fetched {} GIDs for user with email: {}", gids.size(), email);
     return gids;
   }
+
+	public MRDResponse getMRDbyGID(String gid, User user) {
+		// check if the user has ROLE_USER and if USER then check if they have authority to access the resource
+		checkUserAccess(user, "fetch MRD by GID");
+		
+		log.info("Fetching MRD with GID: {}", gid);
+		var mrd = mrdRepository.findByGid(gid)
+			.orElseThrow(() -> {
+				log.error("GID not found: {}", gid);
+				return new GIDNotFoundException("GID not found: " + gid);
+			});
+
+		return mapToResponse(mrd);
+	}
 
   private MRDResponse mapToResponse(MRD mrd) {
     return MRDResponse.builder()
