@@ -1,5 +1,5 @@
 # Build stage
-FROM eclipse-temurin:17-jdk-jammy AS build
+FROM eclipse-temurin:17.0.14_7-jdk-ubi9-minimal AS build
 WORKDIR /app
 
 # Copy only the necessary files for Maven build
@@ -13,7 +13,7 @@ RUN chmod +x mvnw && \
     ./mvnw package -DskipTests
 
 # Runtime stage
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:17.0.14_7-jre-ubi9-minimal
 WORKDIR /app
 
 # Create a non-root user to run the application
