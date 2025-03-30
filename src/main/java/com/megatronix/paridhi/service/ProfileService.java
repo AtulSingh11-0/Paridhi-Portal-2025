@@ -46,7 +46,7 @@ public class ProfileService {
 		}
 
 		// Set profile fields
-		existingUser.setProfilePicture("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png");
+		existingUser.setProfilePicture(getRandomProfilePic());
 		existingUser.setContact(request.getContact());
 		existingUser.setCollege(request.getCollege());
 		existingUser.setYear(request.getYear());
@@ -153,5 +153,33 @@ public class ProfileService {
 			log.error("User {} attempted to {} profile ID: {} without permission", user.getId(), operation, profileId);
 			throw new ForbiddenAccessException("User does not have permission to " + operation + " this profile");
 		}
+	}
+
+	private String getRandomProfilePic() {
+		List<String> profilePics = List.of(
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314892/yellow-among-us_ecgcjw.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314890/white-among-us_hxmilg.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314890/violet-among-us_jhlsx8.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314889/rose-among-us_jucpln.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314889/red-among-us_xgxf0p.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314889/red-among-us_xgxf0p.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314889/lime-among-us_kdnvjk.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314888/light-blue-among-us_rytsti.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314886/green-among-us_yykyxd.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314886/among-us_pkb0no.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314886/blue-among-us_oebvhc.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314886/black-among-us_nj8v4m.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314886/among-us_5_ednqbx.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314886/among-us_9_nipvny.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314886/among-us_8_alany6.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314885/among-us_3_fmgtlf.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314885/among-us_4_mxxm1s.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314885/among-us_2_wikaz8.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314885/among-us_7_d4ro47.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314885/among-us_1_jmv7qt.png",
+			"https://res.cloudinary.com/drxvzwtfr/image/upload/v1743314885/among-us_6_ajkbk9.png"
+		);
+
+		return profilePics.get((int) (Math.random() * profilePics.size()));
 	}
 }
