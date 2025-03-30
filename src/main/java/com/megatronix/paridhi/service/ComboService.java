@@ -240,6 +240,11 @@ public class ComboService {
   }
 
 	private void checkUserAccess(User user, String action) {
+		if (user == null) {
+			log.error("Authentication required to {} the combo", action);
+			throw new ForbiddenAccessException("Authentication required to " + action + " the combo");
+		}
+
 		if (user.getRole().equals(Role.ROLE_USER)) {
 			log.error("User with ID {} not authorized to {} combo", user.getId(), action);
 			throw new ForbiddenAccessException("User not authorized to " + action + " combo");

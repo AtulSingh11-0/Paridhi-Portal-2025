@@ -143,7 +143,12 @@ public class GalleryService {
 	}
 
 	private void checkUserAccess(User user, String methodType) {
-		if (user == null || user.getRole().equals(Role.ROLE_USER)) {
+		if (user == null) {
+			log.error("User is not authenticated to {} image", methodType);
+			throw new ForbiddenAccessException("User not authenticated to " + methodType + " image");
+		}
+
+		if (user.getRole().equals(Role.ROLE_USER)) {
 			log.error("User: {} not authorized to {} image", user == null ? "System" : user.getUsername(), methodType);
 			throw new ForbiddenAccessException("User not authorized to " + methodType + " image");
 		}

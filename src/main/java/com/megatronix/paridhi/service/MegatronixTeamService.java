@@ -34,7 +34,7 @@ public class MegatronixTeamService {
 		log.info("Creating member profile for: {}, year: {}, by: {}", request.getName(), request.getYear(), user.getEmail());
 
 		// check if user has permission to access this resource
-		checkUserPermission(user, "create");
+		checkUserAccess(user, "create");
 
 		// check if member profile already exists
 		if ( megatronixTeamRepository.existsByEmail(request.getEmail()) ) {
@@ -66,7 +66,7 @@ public class MegatronixTeamService {
 		log.info("Updating member profile for: {}, year: {}, by: {}", request.getName(), request.getYear(), user.getEmail());
 
 		// check if user has permission to access this resource
-		checkUserPermission(user, "update");
+		checkUserAccess(user, "update");
 
 		// check if member profile already exists
 		var existingMember = megatronixTeamRepository.findById(id)
@@ -97,7 +97,7 @@ public class MegatronixTeamService {
 		log.info("Deleting member profile with ID: {}, by: {}", id, user.getEmail());
 		
 		// check if user has permission to access this resource
-		checkUserPermission(user, "delete");
+		checkUserAccess(user, "delete");
 		
 		// check if member profile exists
 		var existingMember = megatronixTeamRepository.findById(id)
@@ -144,7 +144,12 @@ public class MegatronixTeamService {
 		return members.map(MegatronixTeamResponse::fromMegatronixTeam);
 	}
 
-	private void checkUserPermission(User user, String methodType) {
+	private void checkUserAccess(User user, String methodType) {
+		if (user == null) {
+			log.error("User is not authenticated to {} member profile", methodType);
+			throw new ForbiddenAccessException("You do not have permission to access this resource");
+		}
+		
 		if ( !user.getRole().equals(Role.ROLE_SUPERADMIN) ) {
 			log.error("User: {} does not have permission to {} member profile", user.getEmail(), methodType);
 			throw new ForbiddenAccessException("User does not have permission to access this resource");

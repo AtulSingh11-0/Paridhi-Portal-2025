@@ -247,8 +247,13 @@ public class EventService {
 	}
 
   private void checkUserAccess(User user, String methodType) {
-    log.info("User: {}", user);
-    if ( user == null || user.getRole().equals(Role.ROLE_USER) ) {
+    if (user == null) {
+			log.error("Authentication required to {} the event", methodType);
+			throw new ForbiddenAccessException("Authentication required to " + methodType + " the event");
+		}
+		
+		log.info("User: {}", user);
+    if ( user.getRole().equals(Role.ROLE_USER) ) {
       log.error("User with ID {} not authorized to {} the event", user == null ? "System" : user.getId(), methodType);
       throw new ForbiddenAccessException("User not authorized to " + methodType + " the event");
     }

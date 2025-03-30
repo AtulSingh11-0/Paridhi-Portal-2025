@@ -140,6 +140,11 @@ public class ProfileService {
 	}
 
 	private void checkUserPermissionForProfile(User user, String targetEmail, String operation) {
+		if (user == null) {
+			log.error("User is not authenticated to {} profile for email: {}", operation, targetEmail);
+			throw new ForbiddenAccessException("Authentication required to " + operation + " this profile");
+		}
+		
 		// Regular users can only manage their own profiles
 		if (user.getRole() == Role.ROLE_USER && !user.getEmail().equals(targetEmail)) {
 			log.error("User {} (email: {}) attempted to {} different email: {}", user.getId(), user.getEmail(), operation, targetEmail);
@@ -148,6 +153,11 @@ public class ProfileService {
 	}
 
 	private void checkUserOwnershipOrAdmin(User user, Long profileId, String operation) {
+		if (user == null) {
+			log.error("User is not authenticated to {} profile ID: {}", operation, profileId);
+			throw new ForbiddenAccessException("Authentication required to " + operation + " this profile");
+		}
+		
 		// Regular users can only access their own profiles
 		if (user.getId() != profileId && user.getRole() == Role.ROLE_USER) {
 			log.error("User {} attempted to {} profile ID: {} without permission", user.getId(), operation, profileId);

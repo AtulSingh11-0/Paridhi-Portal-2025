@@ -160,7 +160,12 @@ public class MRDService {
   }
 
   private void checkUserAccess(User user, String methodName) {
-    if (user.getRole().equals(Role.ROLE_USER)) {
+    if (user == null) {
+			log.error("User is not authenticated to {}", methodName);
+			throw new ForbiddenAccessException("You do not have permission to access this resource");
+		}
+		
+		if (user.getRole().equals(Role.ROLE_USER)) {
       log.error("User with ID {} not authorized to {}", user.getId(), methodName);
       throw new ForbiddenAccessException("User not authorized to  " + methodName);
     }

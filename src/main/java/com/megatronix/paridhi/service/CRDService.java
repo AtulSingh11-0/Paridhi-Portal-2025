@@ -76,6 +76,11 @@ public class CRDService {
 	}
 
 	private void checkUserAccess(User user, String action) {
+		if (user == null) {
+			log.error("User is not authenticated to {} the event", action);
+			throw new ForbiddenAccessException("You do not have permission to " + action + " this event");
+		}
+
 		if (user.getRole() != null && user.getRole().equals(Role.ROLE_USER)) {
 			log.error("User {} does not have permission to {} the event", user.getEmail(), action);
 			throw new ForbiddenAccessException("You do not have permission to " + action + " this event");
