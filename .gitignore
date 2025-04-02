@@ -1,6 +1,7 @@
 .env
 *.html
 assets/
+tests/
 
 HELP.md
 target/
