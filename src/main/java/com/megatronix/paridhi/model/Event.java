@@ -13,6 +13,7 @@ import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -48,7 +49,9 @@ public class Event {
   private String description;
   private String venue;
 
-  @ElementCollection
+  @ElementCollection(
+		fetch = FetchType.EAGER
+	)
   @CollectionTable(
     name = "event_coordinator_details", 
     joinColumns = @JoinColumn(name = "event_id")

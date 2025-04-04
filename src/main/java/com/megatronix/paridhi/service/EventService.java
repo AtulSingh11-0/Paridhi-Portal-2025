@@ -3,6 +3,8 @@ package com.megatronix.paridhi.service;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,6 +37,17 @@ public class EventService {
 	private final ComboRepository comboRepository;
 	private final CloudinaryService cloudinaryService;
   
+	@CacheEvict(
+		value = {
+			"events", 
+			"eventsByDomain", 
+			"eventsByRegistration", 
+			"eventsByType", 
+			"eventById"
+		}, 
+		allEntries = true
+	)
+	@Transactional
   public EventResponse createEvent(EventRequest request, User user) {
     // create event from request
     log.info("Creating event: {} by: {}", request, user);
@@ -69,6 +82,7 @@ public class EventService {
     return EventResponse.fromEvent(savedEvent);
   }
 
+	@Cacheable(value = "events")
   public List<EventResponse> getAllEvents() {
     // fetch all events from database
     log.info("Fetching all events");
@@ -77,6 +91,7 @@ public class EventService {
       .toList();
   }
 
+	@Cacheable(value = "eventsByDomain", key = "#domain.name()")
   public List<EventResponse> getEventsByDomain(Domain domain) {
     // fetch events by domain from database
     log.info("Fetching events by domain: {}", domain);
@@ -85,6 +100,7 @@ public class EventService {
       .toList();
   }
 
+	@Cacheable(value = "eventsByRegistration", key = "#isRegistrationOpen")
   public List<EventResponse> getEventsByRegistration(boolean isRegistrationOpen) {
     // fetch events by registration status from database
     log.info("Fetching events by registration status: {}", isRegistrationOpen);
@@ -93,6 +109,7 @@ public class EventService {
       .toList();
   }
 
+	@Cacheable(value = "eventsByType", key = "#eventType.name()")
   public List<EventResponse> getEventsByType(EventType eventType) {
     // fetch events by type from database
     log.info("Fetching events by type: {}", eventType);
@@ -101,6 +118,7 @@ public class EventService {
       .toList();
   }
 
+	@Cacheable(value = "eventById", key = "#eventId")
   public EventResponse getEventById(Long eventId) {
     // fetch event by ID from database
     log.info("Fetching event by ID: {}", eventId);
@@ -112,15 +130,26 @@ public class EventService {
     return EventResponse.fromEvent(event);
   }
 
-  public EventResponse updateEvent(Long id, EventRequest request, User user) {
+	@CacheEvict(
+		value = {
+			"events", 
+			"eventsByDomain", 
+			"eventsByRegistration", 
+			"eventsByType",
+			"eventById"
+		}, 
+		allEntries = true
+	)
+	@Transactional
+  public EventResponse updateEvent(Long eventId, EventRequest request, User user) {
     // update event by ID from request
-    log.info("Updating event with ID: {}", id);
+    log.info("Updating event with ID: {}", eventId);
 
     // check if the event exists
-    var existingEvent = eventRepository.findById(id)
+    var existingEvent = eventRepository.findById(eventId)
     .orElseThrow( () -> {
-      log.error("Event with ID {} not found", id);
-      return new EventNotFoundException("Event not found with ID: " + id);
+      log.error("Event with ID {} not found", eventId);
+      return new EventNotFoundException("Event not found with ID: " + eventId);
     });
 
     // check if the user has permission to update event
@@ -149,6 +178,17 @@ public class EventService {
     return EventResponse.fromEvent(updatedEvent);
   }
 
+	@CacheEvict(
+		value = {
+			"events", 
+			"eventsByDomain", 
+			"eventsByRegistration", 
+			"eventsByType",
+			"eventById"
+		}, 
+		allEntries = true
+	)
+	@Transactional
   public void deleteEvent(Long eventId, User user) {
     // delete event by ID from database
     log.info("Deleting event with ID: {}", eventId);
@@ -190,6 +230,17 @@ public class EventService {
     log.info("Event deleted with ID: {}", eventId);
   }
 
+	@CacheEvict(
+		value = {
+			"events", 
+			"eventsByDomain", 
+			"eventsByRegistration", 
+			"eventsByType",
+			"eventById"
+		}, 
+		allEntries = true
+	)
+	@Transactional
   public EventResponse toggleRegistrationStatus(Long id, User user) {
     // fetch event by ID from database
     var existingEvent = eventRepository.findById(id)
@@ -211,6 +262,16 @@ public class EventService {
     return EventResponse.fromEvent(updatedEvent);
   }
 
+	@CacheEvict(
+		value = {
+			"events", 
+			"eventsByDomain", 
+			"eventsByRegistration", 
+			"eventsByType",
+			"eventById"
+		}, 
+		allEntries = true
+	)
 	@Transactional
 	public EventResponse updateEventImage(Long id, MultipartFile file, User user) {
 		log.info("Updating event image for event with ID: {}, by: {}", id, user);
