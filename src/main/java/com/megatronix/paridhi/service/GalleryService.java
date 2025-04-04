@@ -2,6 +2,9 @@ package com.megatronix.paridhi.service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +31,7 @@ public class GalleryService {
 	private final GalleryRepository galleryRepository;
 	private final CloudinaryService cloudinaryService;
 
+	@Cacheable(value = "galleries", key = "'page_' + #page + '_size_' + #size")
 	public Page<GalleryResponse> getAllImages(int page, int size) {
 		log.info("Fetching all images with page: {} and size: {}", page, size);
 		Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
@@ -35,6 +39,7 @@ public class GalleryService {
 			.map(GalleryResponse::fromGallery);
 	}
 
+	@Cacheable(value = "galleriesByYear", key = "#paridhiYear")
 	public List<GalleryResponse> getImageByParidhiYear(String paridhiYear) {
 		log.info("Fetching images by Paridhi year: {}", paridhiYear);
 		return galleryRepository.findByParidhiYear(paridhiYear).stream()
@@ -42,6 +47,7 @@ public class GalleryService {
 			.toList();
 	}
 
+	@Cacheable(value = "galleryById", key = "#id")
 	public GalleryResponse getImageById(Long id) {
 		log.info("Fetching image with id: {}", id);
 		return galleryRepository.findById(id)
@@ -52,6 +58,13 @@ public class GalleryService {
 			});
 	}
 
+	@CacheEvict(
+		value = { 
+			"galleries",
+			"galleriesByYear", 
+		},
+		allEntries = true
+	)
 	@Transactional
 	public GalleryResponse uploadImage(String paridhiYear, MultipartFile image, User user) {
 		log.info("Uploading image: {}, for Paridhi year: {}, by user: {}", image.getOriginalFilename(), paridhiYear, user.getUsername());
@@ -83,6 +96,18 @@ public class GalleryService {
 		return GalleryResponse.fromGallery(savedImage);
 	}
 
+	@Caching(
+		evict = {
+			@CacheEvict(value = "galleryById", key = "#id"),
+			@CacheEvict(
+				value = {
+					"galleries",
+					"galleriesByYear",
+				}, 
+				allEntries = true
+			),
+		}
+	)
 	@Transactional
 	public GalleryResponse updateImageFile(Long id, MultipartFile image, User user) {
 		log.info("Updating image with id: {} by user: {}", id, user.getUsername());
@@ -120,6 +145,18 @@ public class GalleryService {
 		return GalleryResponse.fromGallery(savedImage);
 	}
 
+	@Caching(
+		evict = {
+			@CacheEvict(value = "galleryById", key = "#id"),
+			@CacheEvict(
+				value = {
+					"galleries",
+					"galleriesByYear",
+				}, 
+				allEntries = true
+			),
+		}
+	)
 	@Transactional
 	public void deleteImage(Long id, User user) {
 		log.info("Deleting image with id: {}", id);
