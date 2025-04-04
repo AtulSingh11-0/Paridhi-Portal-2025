@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +40,16 @@ public class TeamService {
   private final ComboRepository comboRepository;
   private final EventRepository eventRepository;
 
+	@CacheEvict(
+		value = {
+			"teams",
+			"teamsByEvent",
+			"teamsByUser",
+			"teamsByGid",
+			"teamByTid",
+		}, 
+		allEntries = true
+	)
   public TeamResponse registerTeam(TeamRequest request) {
     log.info("Team Registration request: {}", request);
 
@@ -112,6 +124,16 @@ public class TeamService {
     return TeamResponse.fromTeam(savedTeam);
   }
 
+	@CacheEvict(
+		value = {
+			"teams",
+			"teamsByEvent",
+			"teamsByUser",
+			"teamsByGid",
+			"teamByTid",
+		}, 
+		allEntries = true
+	)
   @Transactional
   public List<TeamResponse> registerTeamForCombo(ComboTeamRequest request) {
     log.info("Team registration for combo request: {}", request);
@@ -214,6 +236,7 @@ public class TeamService {
     return teamResponses;
   }
 
+	@Cacheable(value = "teamsByEvent", key = "#eventId")
   public List<TeamResponse> getTeamsByEvent(Long eventId) {
     log.info("Fetching teams for event with ID: {}", eventId);
 
@@ -233,6 +256,7 @@ public class TeamService {
       .toList();
   }
 
+	@Cacheable(value = "teamsByUser", key = "#email")
   public List<TeamResponse> getTeamsByUser(String email) {
     log.info("Fetching teams for user with email: {}", email);
 
@@ -254,6 +278,7 @@ public class TeamService {
 			.toList();
 	}
 
+	@Cacheable(value = "teamByTid", key = "#tid")
   public TeamResponse getTeamByTid(String tid) {
     log.info("Fetching team with TID: {}", tid);
 
@@ -268,6 +293,16 @@ public class TeamService {
     return TeamResponse.fromTeam(team);
   }
 
+	@CacheEvict(
+		value = {
+			"teams",
+			"teamsByEvent",
+			"teamsByUser",
+			"teamsByGid",
+			"teamByTid",
+		},
+		allEntries = true
+	)
   public TeamResponse updatePaymentStatus(String tid) {
     // find the team
     var team = teamRepository.findByTid(tid)
@@ -285,7 +320,17 @@ public class TeamService {
     // return the updated team
     return TeamResponse.fromTeam(updatedTeam);
   }
-
+	
+	@CacheEvict(
+		value = {
+			"teams",
+			"teamsByEvent",
+			"teamsByUser",
+			"teamsByGid",
+			"teamByTid",
+		},
+		allEntries = true
+	)
   public TeamResponse updatePlayedStatus(String tid) {
     // find the team
     var team = teamRepository.findByTid(tid)
@@ -310,6 +355,16 @@ public class TeamService {
     return TeamResponse.fromTeam(updatedTeam);
   }
 
+	@CacheEvict(
+		value = {
+			"teams",
+			"teamsByEvent",
+			"teamsByUser",
+			"teamsByGid",
+			"teamByTid",
+		},
+		allEntries = true
+	)
 	public TeamResponse updateQualifiedStatus(String tid) {
 		// find the team
 		var team = teamRepository.findByTid(tid)
@@ -348,6 +403,16 @@ public class TeamService {
 		return TeamResponse.fromTeam(updatedTeam);
 	}
 
+	@CacheEvict(
+		value = {
+			"teams",
+			"teamsByEvent",
+			"teamsByUser",
+			"teamsByGid",
+			"teamByTid",
+		},
+		allEntries = true
+	)
 	public TeamResponse updatePosition(String tid, Position position) {
 		// find the team
 		var team = teamRepository.findByTid(tid)
@@ -391,6 +456,7 @@ public class TeamService {
 		return TeamResponse.fromTeam(updatedTeam);
 	}
 
+	@Cacheable(value = "teamsByGid", key = "#gid")
   public List<TeamResponse> getTeamsByGid(String gid) {
     log.info("Fetching teams by GID: {}", gid);
 
