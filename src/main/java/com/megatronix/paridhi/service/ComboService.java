@@ -3,6 +3,8 @@ package com.megatronix.paridhi.service;
 import java.util.HashSet;
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,6 +34,15 @@ public class ComboService {
   private final EventRepository eventRepository;
 	private final CloudinaryService cloudinaryService;
 
+	@CacheEvict(
+		value = {
+			"combos",
+			"combosById",
+			"combosByDomain",
+			"combosByStatus"
+		},
+		allEntries = true
+	)
   @Transactional
   public ComboResponse createCombo(ComboRequest request, User user) {
     log.info("Creating combo: {}", request);
@@ -73,6 +84,7 @@ public class ComboService {
     return ComboResponse.fromCombo(savedCombo);
   }
 
+	@Cacheable(value = "combos")
   public List<ComboResponse> getAllCombos() {
     log.info("Fetching all combos");
     return comboRepository.findAll().stream()
@@ -80,6 +92,7 @@ public class ComboService {
       .toList();
   }
 
+	@Cacheable(value = "combosById", key = "#id")
   public ComboResponse getComboById(Long id) {
     log.info("Fetching combo with ID: {}", id);
     return comboRepository.findById(id)
@@ -90,6 +103,7 @@ public class ComboService {
       });
   }
 
+	@Cacheable(value = "combosByDomain", key = "#domain.name()")
   public List<ComboResponse> getCombosByDomain(Domain domain) {
     log.info("Fetching combos for domain: {}", domain);
     return comboRepository.findByDomain(domain).stream()
@@ -97,6 +111,7 @@ public class ComboService {
       .toList();
   }
 
+	@Cacheable(value = "combosByStatus", key = "#isRegistrationOpen")
   public List<ComboResponse> getCombosByStatus(boolean isRegistrationOpen) {
     log.info("Fetching combos by status: {}", isRegistrationOpen);
     return comboRepository.findByIsRegistrationOpen(isRegistrationOpen).stream()
@@ -104,6 +119,15 @@ public class ComboService {
       .toList();
   }
 
+	@CacheEvict(
+		value = {
+			"combos",
+			"combosById",
+			"combosByDomain",
+			"combosByStatus"
+		},
+		allEntries = true
+	)
   @Transactional
   public ComboResponse updateCombo(Long id, ComboRequest request, User user) {
     log.info("Updating combo with ID: {} by: {}", id, user);
@@ -151,6 +175,15 @@ public class ComboService {
     return ComboResponse.fromCombo(updatedCombo);
   }
 
+	@CacheEvict(
+		value = {
+			"combos",
+			"combosById",
+			"combosByDomain",
+			"combosByStatus"
+		},
+		allEntries = true
+	)
 	@Transactional
 	public ComboResponse updateComboImage(Long id, MultipartFile file, User user) {
 		log.info("Updating combo image for combo with ID: {}, by: {}", id, user.getEmail());
@@ -190,6 +223,15 @@ public class ComboService {
 		}
 	}
 
+	@CacheEvict(
+		value = {
+			"combos",
+			"combosById",
+			"combosByDomain",
+			"combosByStatus"
+		},
+		allEntries = true
+	)
   @Transactional
   public void deleteCombo(Long id, User user) {
     log.info("Deleting combo with ID: {} by: {}", id, user);
@@ -214,6 +256,15 @@ public class ComboService {
     log.info("Combo with ID: {} deleted successfully", id);
   }
 
+	@CacheEvict(
+		value = {
+			"combos",
+			"combosById",
+			"combosByDomain",
+			"combosByStatus"
+		},
+		allEntries = true
+	)
   @Transactional
   public ComboResponse toggleComboStatus(Long id, User user) {
     log.info("Toggling status for combo with ID: {} by: {}", id, user);
