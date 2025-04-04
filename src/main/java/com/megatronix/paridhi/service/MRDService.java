@@ -3,6 +3,9 @@ package com.megatronix.paridhi.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +31,14 @@ public class MRDService {
   private final MRDRepository mrdRepository;
   private final UserRepository userRepository;
 
+	@CacheEvict(
+		value = {
+			"mrds",
+			"mrdsByUser",
+			"gidsByUser"
+		},
+		allEntries = true
+	)
   @Transactional
   public MRDResponse registerMRD(MRDRequest request) {
     log.info("MRD registration request: {}", request);
@@ -63,6 +74,20 @@ public class MRDService {
     return mapToResponse(savedMRD);
   }
 
+	@Caching(
+		evict = {
+			@CacheEvict(value = "mrdByGid", key = "#gid"),
+			@CacheEvict(
+				value = {
+					"mrds",
+					"mrdsByUser",
+					"gidsByUser"
+				}, 
+				allEntries = true
+			)
+		}
+	)
+	@Transactional
 	public MRDResponse updatePaymentStatus(String gid, User user) {
     // check if user has permission to update payment status
     checkUserAccess(user, "update payment status");
@@ -81,6 +106,7 @@ public class MRDService {
     return mapToResponse(updatedMRD);
   }
 
+	@Cacheable(value = "mrdsByUser", key = "#email")
   public List<MRDResponse> getUserMRDs(String email, User user) {
     // check if the user has ROLE_USER and if USER then check if they have authority to access the resource
     checkUserAccess(user, "fetch MRDs");
@@ -101,6 +127,7 @@ public class MRDService {
 			.toList();
   }
 
+	@Cacheable(value = "gidsByUser", key = "#email")
   public List<String> getUserGids(String email, User user) {
     // check if the user has ROLE_USER and if USER then check if they have authority to access the resource
     checkUserAccess(user, "fetch GIDs");
@@ -125,6 +152,7 @@ public class MRDService {
     return gids;
   }
 
+	@Cacheable(value = "mrdByGid", key = "#gid")
 	public MRDResponse getMRDbyGID(String gid, User user) {
 		// check if the user has ROLE_USER and if USER then check if they have authority to access the resource
 		checkUserAccess(user, "fetch MRD by GID");
