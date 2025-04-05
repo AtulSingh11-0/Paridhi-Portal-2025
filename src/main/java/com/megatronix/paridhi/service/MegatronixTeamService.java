@@ -1,6 +1,7 @@
 package com.megatronix.paridhi.service;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.Page;
@@ -12,10 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.megatronix.paridhi.constant.Role;
 import com.megatronix.paridhi.constant.Year;
 import com.megatronix.paridhi.dto.request.MegatronixTeamRequest;
+import com.megatronix.paridhi.dto.response.CategorizedMembersResponse;
 import com.megatronix.paridhi.dto.response.MegatronixTeamResponse;
 import com.megatronix.paridhi.exception.ForbiddenAccessException;
 import com.megatronix.paridhi.exception.MemberProfileAlreadyExistsException;
 import com.megatronix.paridhi.exception.MemberProfileNotFoundException;
+import com.megatronix.paridhi.model.Designation;
 import com.megatronix.paridhi.model.MegatronixTeam;
 import com.megatronix.paridhi.model.User;
 import com.megatronix.paridhi.repository.MegatronixTeamRepository;
@@ -52,6 +55,7 @@ public class MegatronixTeamService {
 			.instagramLink(request.getInstagramLink() == null ? "N/A" : request.getInstagramLink())
 			.githubLink(request.getGithubLink() == null ? "N/A" : request.getGithubLink())
 			.imageLink(request.getImageLink())
+			.designation(request.getDesignation() == null ? Designation.MEMBER : request.getDesignation())
 			.build();
 
 		MegatronixTeam savedMember = megatronixTeamRepository.save(member);
@@ -84,6 +88,7 @@ public class MegatronixTeamService {
 		existingMember.setInstagramLink(request.getInstagramLink() == null ? existingMember.getInstagramLink() : request.getInstagramLink());
 		existingMember.setGithubLink(request.getGithubLink() == null ? existingMember.getGithubLink() : request.getGithubLink());
 		existingMember.setImageLink(request.getImageLink() == null ? existingMember.getImageLink() : request.getImageLink());
+		existingMember.setDesignation(request.getDesignation() == null ? existingMember.getDesignation() : request.getDesignation());
 
 		MegatronixTeam updatedMember = megatronixTeamRepository.save(existingMember);
 		log.info("Member profile updated successfully for: {}, year: {}", updatedMember.getName(), updatedMember.getYear());
@@ -111,37 +116,55 @@ public class MegatronixTeamService {
 		log.info("Member profile deleted successfully for: {}, year: {}", existingMember.getName(), existingMember.getYear());
 	}
 
-	public Page<MegatronixTeamResponse> getAllMemberProfilesSortedByYear(int page, int size) {
-		log.info("Fetching all member profiles sorted by year, page: {}, size: {}", page, size);
-		Page<MegatronixTeam> members = megatronixTeamRepository.findAll(PageRequest.of(page, size));
+	public Page<CategorizedMembersResponse> getAllMemberProfilesCategorized(int page, int size) {
+    log.info("Fetching all member profiles categorized by designation, page: {}, size: {}", page, size);
+    Page<MegatronixTeam> membersPage = megatronixTeamRepository.findAll(PageRequest.of(page, size));
+    
+    // Create the categorized response from the page content
+    CategorizedMembersResponse categorizedResponse = categorizeMembers(membersPage.getContent());
+    
+    // Wrap it in a Page for consistent API response
+    return new PageImpl<>(
+			List.of(categorizedResponse), 
+			membersPage.getPageable(), 
+			membersPage.getTotalElements()
+    );
+	}
 
-		// custom comparator for year enum
-		Comparator<MegatronixTeam> yearComparator = (m1, m2) -> {
-			// defining a custom order for the years
-			Map<Year, Integer> yearOrder = Map.of(
-				Year.FOURTH, 4,
-				Year.THIRD, 3,
-				Year.SECOND, 2,
-				Year.FIRST, 1
-			);
-
-			return Integer.compare(
+	private CategorizedMembersResponse categorizeMembers(List<MegatronixTeam> members) {
+    // Define year order for sorting
+    Map<Year, Integer> yearOrder = Map.of(
+			Year.FOURTH, 4,
+			Year.THIRD, 3, 
+			Year.SECOND, 2,
+			Year.FIRST, 1
+    );
+    
+    // Custom comparator for year
+    Comparator<MegatronixTeam> yearComparator = (m1, m2) -> 
+			Integer.compare(
 				yearOrder.getOrDefault(m2.getYear(), -1),
 				yearOrder.getOrDefault(m1.getYear(), -1)
 			);
-		};
-		
-		// sort the members by year using the custom comparator
-		var sortedMembers = members.getContent().stream()
+    
+    // Split and sort members into regular Members and Developers
+    List<MegatronixTeamResponse> regularMembers = members.stream()
+			.filter(member -> member.getDesignation() == Designation.MEMBER)
 			.sorted(yearComparator)
+			.map(MegatronixTeamResponse::fromMegatronixTeam)
 			.toList();
-
-		// create a new page with the sorted members
-		members = new PageImpl<>(sortedMembers, members.getPageable(), members.getTotalElements());
-		log.info("Fetched {} member profiles sorted by year", members.getTotalElements());
-		
-		// return a page of type MegatronixTeamResponse object
-		return members.map(MegatronixTeamResponse::fromMegatronixTeam);
+    
+    List<MegatronixTeamResponse> developers = members.stream()
+			.filter(member -> member.getDesignation() != Designation.MEMBER)
+			.sorted(yearComparator)
+			.map(MegatronixTeamResponse::fromMegatronixTeam)
+			.toList();
+    
+    // Return the categorized response
+		return CategorizedMembersResponse.builder()
+			.members(regularMembers)
+			.developers(developers)
+			.build();
 	}
 
 	private void checkUserAccess(User user, String methodType) {

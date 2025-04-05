@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.megatronix.paridhi.dto.request.MegatronixTeamRequest;
+import com.megatronix.paridhi.dto.response.CategorizedMembersResponse;
 import com.megatronix.paridhi.dto.response.MegatronixTeamResponse;
 import com.megatronix.paridhi.model.User;
 import com.megatronix.paridhi.service.MegatronixTeamService;
@@ -31,11 +32,11 @@ public class MegatronixTeamController {
 	// Public endpoints
 
 	@GetMapping("/")
-	public ResponseEntity<Page<MegatronixTeamResponse>> getAllMemberProfilesSortedByYear(
+	public ResponseEntity<Page<CategorizedMembersResponse>> getAllMemberProfilesCategorized(
 		@RequestParam(name = "page", defaultValue = "0") int page,
 		@RequestParam(name = "size", defaultValue = "10") int size
 	) {
-		return ResponseEntity.ok(megatronixTeamService.getAllMemberProfilesSortedByYear(page, size));
+		return ResponseEntity.ok(megatronixTeamService.getAllMemberProfilesCategorized(page, size));
 	}
 
 	// Authorized endpoints
