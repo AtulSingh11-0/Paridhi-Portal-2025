@@ -1,6 +1,7 @@
 package com.megatronix.paridhi.dto.request;
 
 import com.megatronix.paridhi.constant.Year;
+import com.megatronix.paridhi.model.Designation;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -41,4 +42,7 @@ public class MegatronixTeamRequest {
 	@Pattern(regexp = "^(https?://.*)?$", message = "Image link must be a valid URL or empty")
 	@NotBlank(message = "Image link is required")
 	private String imageLink;
+
+	@NotNull(message = "Designation is required")
+	private Designation designation;
 }

@@ -47,6 +47,9 @@ public class MegatronixTeam {
 
 	private String imageLink;
 
+	@Enumerated(EnumType.STRING)
+	private Designation designation;
+
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 
