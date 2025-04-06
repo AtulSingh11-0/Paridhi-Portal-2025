@@ -42,6 +42,8 @@ public class Event {
   private Domain domain;
 
   private String name;
+	
+	@Enumerated(EnumType.STRING)
   private EventType eventType; // MAIN or ON_SPOT
   private LocalDateTime eventDate;
   
