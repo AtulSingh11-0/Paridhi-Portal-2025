@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.megatronix.paridhi.constant.Designation;
 import com.megatronix.paridhi.constant.Role;
 import com.megatronix.paridhi.constant.Year;
 import com.megatronix.paridhi.dto.request.MegatronixTeamRequest;
@@ -18,7 +19,6 @@ import com.megatronix.paridhi.dto.response.MegatronixTeamResponse;
 import com.megatronix.paridhi.exception.ForbiddenAccessException;
 import com.megatronix.paridhi.exception.MemberProfileAlreadyExistsException;
 import com.megatronix.paridhi.exception.MemberProfileNotFoundException;
-import com.megatronix.paridhi.model.Designation;
 import com.megatronix.paridhi.model.MegatronixTeam;
 import com.megatronix.paridhi.model.User;
 import com.megatronix.paridhi.repository.MegatronixTeamRepository;
