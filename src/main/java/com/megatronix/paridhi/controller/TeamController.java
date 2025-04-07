@@ -36,23 +36,7 @@ public class TeamController {
     return ResponseEntity.status(HttpStatus.CREATED).body(teamService.registerTeam(request));
   }
 
-  @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
-  @GetMapping("/events/{eventId}")
-  public ResponseEntity<List<TeamResponse>> getTeamsByEventId(
-    @PathVariable Long eventId
-  ) {
-    return ResponseEntity.ok(teamService.getTeamsByEvent(eventId));
-  }
-
-  @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN') or #email == authentication.name")
-  @GetMapping("/users/{email}")
-  public ResponseEntity<List<TeamResponse>> getTeamsByUserEmail(
-    @PathVariable String email
-  ) {
-    return ResponseEntity.ok(teamService.getTeamsByUser(email));
-  }
-
-  @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN') or @teamSecurity.isTeamMember(#tid, authentication.name)")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN') or @teamSecurity.isTeamMember(#tid, authentication.name)")
   @GetMapping("/tid/{tid}")
   public ResponseEntity<TeamResponse> getTeamByTid(
     @PathVariable String tid
@@ -60,15 +44,7 @@ public class TeamController {
     return ResponseEntity.ok(teamService.getTeamByTid(tid));
   }
 
-  @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
-  @GetMapping("/gid/{gid}")
-  public ResponseEntity<List<TeamResponse>> getTeamsByGid(
-    @PathVariable String gid
-  ) {
-    return ResponseEntity.ok(teamService.getTeamsByGid(gid));
-  }
-
-  @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @PatchMapping("/{tid}/payment")
   public ResponseEntity<TeamResponse> updatePaymentStatus(
     @PathVariable String tid
@@ -76,7 +52,7 @@ public class TeamController {
     return ResponseEntity.ok(teamService.updatePaymentStatus(tid));
   }
 
-  @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @PatchMapping("/{tid}/played")
   public ResponseEntity<TeamResponse> updatePlayedStatus(
     @PathVariable String tid
@@ -84,7 +60,7 @@ public class TeamController {
     return ResponseEntity.ok(teamService.updatePlayedStatus(tid));
   }
 
-	@PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
 	@PatchMapping("{tid}/qualified")
 	public ResponseEntity<TeamResponse> updateQualifiedStatus(
 		@PathVariable String tid
@@ -92,7 +68,7 @@ public class TeamController {
 		return ResponseEntity.ok(teamService.updateQualifiedStatus(tid));
 	}
 
-	@PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
 	@PatchMapping("{tid}") 
 	public ResponseEntity<TeamResponse> updatePosition(
 		@PathVariable String tid,
@@ -100,4 +76,28 @@ public class TeamController {
 	) {
 		return ResponseEntity.ok(teamService.updatePosition(tid, position));
 	}
+
+	@PreAuthorize("hasRole('SUPERADMIN')")
+  @GetMapping("/events/{eventId}")
+  public ResponseEntity<List<TeamResponse>> getTeamsByEventId(
+    @PathVariable Long eventId
+  ) {
+    return ResponseEntity.ok(teamService.getTeamsByEvent(eventId));
+  }
+
+	@PreAuthorize("hasRole('SUPERADMIN')")
+  @GetMapping("/gid/{gid}")
+  public ResponseEntity<List<TeamResponse>> getTeamsByGid(
+    @PathVariable String gid
+  ) {
+    return ResponseEntity.ok(teamService.getTeamsByGid(gid));
+  }
+
+  @PreAuthorize("hasRole('SUPERADMIN') or (#email == authentication.name)")
+  @GetMapping("/users/{email}")
+  public ResponseEntity<List<TeamResponse>> getTeamsByUserEmail(
+    @PathVariable String email
+  ) {
+    return ResponseEntity.ok(teamService.getTeamsByUser(email));
+  }
 }
