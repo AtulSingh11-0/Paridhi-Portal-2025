@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.megatronix.paridhi.constant.Designation;
 import com.megatronix.paridhi.constant.Year;
-import com.megatronix.paridhi.model.Designation;
 import com.megatronix.paridhi.model.MegatronixTeam;
 
 import lombok.AllArgsConstructor;

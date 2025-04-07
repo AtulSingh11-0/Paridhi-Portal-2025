@@ -1,7 +1,7 @@
 package com.megatronix.paridhi.dto.request;
 
+import com.megatronix.paridhi.constant.Designation;
 import com.megatronix.paridhi.constant.Year;
-import com.megatronix.paridhi.model.Designation;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
