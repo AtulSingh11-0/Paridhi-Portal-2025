@@ -2,6 +2,7 @@ package com.megatronix.paridhi.model;
 
 import java.time.LocalDateTime;
 
+import com.megatronix.paridhi.constant.Designation;
 import com.megatronix.paridhi.constant.Year;
 
 import jakarta.persistence.Column;
