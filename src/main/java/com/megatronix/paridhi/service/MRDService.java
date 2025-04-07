@@ -167,6 +167,22 @@ public class MRDService {
 		return mapToResponse(mrd);
 	}
 
+	public List<MRDResponse> getAllMRDs(User user) {
+		log.info("Fetching all MRDs for user with role: {}", user.getRole());
+
+		// check if user has permission to fetch all MRDs
+		checkUserAccess(user, "fetch all MRDs");
+
+		// find all MRDs
+		var mrds = mrdRepository.findAll();
+
+		log.info("Fetched {} MRDs", mrds.size());
+
+		return mrds.stream()
+			.map(this::mapToResponse)
+			.toList();
+	}
+
   private MRDResponse mapToResponse(MRD mrd) {
     return MRDResponse.builder()
     .id(mrd.getId())
