@@ -75,4 +75,12 @@ public class MRDController {
   ) {
     return ResponseEntity.ok(mrdService.updatePaymentStatus(gid, user));
   }
+
+	@PreAuthorize("hasRole('SUPERADMIN')")
+	@GetMapping
+	public ResponseEntity<List<MRDResponse>> getAllMRDs(
+		@AuthenticationPrincipal User user
+	) {
+		return ResponseEntity.ok(mrdService.getAllMRDs(user));
+	}
 }
