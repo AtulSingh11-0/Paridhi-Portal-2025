@@ -1,4 +1,4 @@
-package com.megatronix.paridhi.model;
+package com.megatronix.paridhi.constant;
 
 public enum Designation {
 	MEMBER("Member"),
