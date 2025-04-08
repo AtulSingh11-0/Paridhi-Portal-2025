@@ -170,6 +170,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
 	}
 
+	@ExceptionHandler(DomainPosterNotFoundException.class)
+	public ResponseEntity<ErrorResponse> handleDomainPosterNotFoundException(
+		DomainPosterNotFoundException exception,
+		HttpServletRequest request
+	) {
+		ErrorResponse errorResponse = ErrorResponse.builder()
+			.status(HttpStatus.NOT_FOUND.value())
+			.message(exception.getMessage())
+			.error(HttpStatus.NOT_FOUND.getReasonPhrase())
+			.timestamp(LocalDateTime.now())
+			.path(request.getRequestURI())
+			.build();
+
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+	}
+
 	@Override
 	protected ResponseEntity<Object> handleNoHandlerFoundException(
 		@NonNull NoHandlerFoundException ex,
@@ -288,11 +304,26 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
 	}
-
 	
 	@ExceptionHandler(TeamRegistrationException.class)
 	public ResponseEntity<ErrorResponse> handleTeamRegistrationException(
 		TeamRegistrationException exception,
+		HttpServletRequest request
+	) {
+		ErrorResponse errorResponse = ErrorResponse.builder()
+			.status(HttpStatus.BAD_REQUEST.value())
+			.message(exception.getMessage())
+			.error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+			.timestamp(LocalDateTime.now())
+			.path(request.getRequestURI())
+			.build();
+
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+	}
+
+	@ExceptionHandler(DomainPosterAlreadyExistsExcpetion.class)
+	public ResponseEntity<ErrorResponse> handleDomainPosterAlreadyExistsException(
+		DomainPosterAlreadyExistsExcpetion exception,
 		HttpServletRequest request
 	) {
 		ErrorResponse errorResponse = ErrorResponse.builder()
