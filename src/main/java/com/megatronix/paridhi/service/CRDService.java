@@ -36,9 +36,9 @@ public class CRDService {
 
 		var teams = teamRepository.findByEvent(event);
 
-		// segregate the teams into who have their paid field as true and played field as false
+		// segregate the teams into who have their paid field as true and qualified field as false
 		var prelimsTeams = teams.stream()
-			.filter(team -> (team.isPaid() && !team.isHasPlayed()))
+			.filter(team -> (team.isPaid() && !team.isQualified()))
 			.toList();
 		log.info("Fetched {} teams for Prelims of Event: {}", prelimsTeams.size(), event.getName());
 
