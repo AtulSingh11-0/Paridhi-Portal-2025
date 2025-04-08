@@ -44,7 +44,7 @@ public class Event {
   private String name;
 	
 	@Enumerated(EnumType.STRING)
-  private EventType eventType; // MAIN or ON_SPOT
+  private EventType eventType;
   private LocalDateTime eventDate;
   
   @Column(length = 2000)
