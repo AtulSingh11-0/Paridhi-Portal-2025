@@ -4,9 +4,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MegatronixTeamService {
 	private final MegatronixTeamRepository megatronixTeamRepository;
 
+	@CacheEvict(value = "megatronixTeamMembers", allEntries = true)
 	@Transactional
 	public MegatronixTeamResponse createMemberProfile(MegatronixTeamRequest request, User user) {
 		log.info("Creating member profile for: {}, year: {}, by: {}", request.getName(), request.getYear(), user.getEmail());
@@ -50,10 +50,10 @@ public class MegatronixTeamService {
 			.name(request.getName())
 			.email(request.getEmail())
 			.year(request.getYear())
-			.linkedInLink(request.getLinkedInLink() == null ? "N/A" : request.getLinkedInLink())
-			.facebookLink(request.getFacebookLink() == null ? "N/A" : request.getFacebookLink())
-			.instagramLink(request.getInstagramLink() == null ? "N/A" : request.getInstagramLink())
-			.githubLink(request.getGithubLink() == null ? "N/A" : request.getGithubLink())
+			.linkedInLink(request.getLinkedInLink() == null ? "" : request.getLinkedInLink())
+			.facebookLink(request.getFacebookLink() == null ? "" : request.getFacebookLink())
+			.instagramLink(request.getInstagramLink() == null ? "" : request.getInstagramLink())
+			.githubLink(request.getGithubLink() == null ? "" : request.getGithubLink())
 			.imageLink(request.getImageLink())
 			.designation(request.getDesignation() == null ? Designation.MEMBER : request.getDesignation())
 			.build();
@@ -65,6 +65,7 @@ public class MegatronixTeamService {
 		return MegatronixTeamResponse.fromMegatronixTeam(savedMember);
 	}
 
+	@CacheEvict(value = "megatronixTeamMembers", allEntries = true)
 	@Transactional
 	public MegatronixTeamResponse updateMemberProfile(Long id, MegatronixTeamRequest request, User user) {
 		log.info("Updating member profile for: {}, year: {}, by: {}", request.getName(), request.getYear(), user.getEmail());
@@ -97,6 +98,7 @@ public class MegatronixTeamService {
 		return MegatronixTeamResponse.fromMegatronixTeam(updatedMember);
 	}
 
+	@CacheEvict(value = "megatronixTeamMembers", allEntries = true)
 	@Transactional
 	public void deleteMemberProfile(Long id, User user) {
 		log.info("Deleting member profile with ID: {}, by: {}", id, user.getEmail());
@@ -116,19 +118,16 @@ public class MegatronixTeamService {
 		log.info("Member profile deleted successfully for: {}, year: {}", existingMember.getName(), existingMember.getYear());
 	}
 
-	public Page<CategorizedMembersResponse> getAllMemberProfilesCategorized(int page, int size) {
-    log.info("Fetching all member profiles categorized by designation, page: {}, size: {}", page, size);
-    Page<MegatronixTeam> membersPage = megatronixTeamRepository.findAll(PageRequest.of(page, size));
+	@Cacheable(value = "megatronixTeamMembers")
+	public List<CategorizedMembersResponse> getAllMemberProfilesCategorized() {
+    log.info("Fetching all member profiles");
+    List<MegatronixTeam> membersPage = megatronixTeamRepository.findAll();
     
     // Create the categorized response from the page content
-    CategorizedMembersResponse categorizedResponse = categorizeMembers(membersPage.getContent());
+    CategorizedMembersResponse categorizedResponse = categorizeMembers(membersPage);
     
     // Wrap it in a Page for consistent API response
-    return new PageImpl<>(
-			List.of(categorizedResponse), 
-			membersPage.getPageable(), 
-			membersPage.getTotalElements()
-    );
+    return List.of(categorizedResponse);
 	}
 
 	private CategorizedMembersResponse categorizeMembers(List<MegatronixTeam> members) {
@@ -140,12 +139,10 @@ public class MegatronixTeamService {
 			Year.FIRST, 1
     );
     
-    // Custom comparator for year
-    Comparator<MegatronixTeam> yearComparator = (m1, m2) -> 
-			Integer.compare(
-				yearOrder.getOrDefault(m2.getYear(), -1),
-				yearOrder.getOrDefault(m1.getYear(), -1)
-			);
+    // Custom comparator for year with alphabetical sorting as secondary criteria
+    Comparator<MegatronixTeam> yearComparator = Comparator
+			.comparing( (MegatronixTeam member) -> yearOrder.getOrDefault(member.getYear(), -1), Comparator.reverseOrder())
+			.thenComparing(MegatronixTeam::getName);
     
     // Split and sort members into regular Members and Developers
     List<MegatronixTeamResponse> regularMembers = members.stream()
