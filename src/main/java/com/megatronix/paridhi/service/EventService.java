@@ -71,7 +71,7 @@ public class EventService {
       .registrationFee(request.getRegistrationFee())
       .prizePool(request.getPrizePool())
       .createdBy(user)
-      .updatedBy(null)
+      .updatedBy(user)
       .build();
 
     // save event to database
