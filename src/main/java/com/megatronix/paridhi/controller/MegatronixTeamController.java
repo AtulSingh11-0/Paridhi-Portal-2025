@@ -1,6 +1,7 @@
 package com.megatronix.paridhi.controller;
 
-import org.springframework.data.domain.Page;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.megatronix.paridhi.dto.request.MegatronixTeamRequest;
@@ -31,12 +31,9 @@ public class MegatronixTeamController {
 
 	// Public endpoints
 
-	@GetMapping("/")
-	public ResponseEntity<Page<CategorizedMembersResponse>> getAllMemberProfilesCategorized(
-		@RequestParam(name = "page", defaultValue = "0") int page,
-		@RequestParam(name = "size", defaultValue = "10") int size
-	) {
-		return ResponseEntity.ok(megatronixTeamService.getAllMemberProfilesCategorized(page, size));
+	@GetMapping
+	public ResponseEntity<List<CategorizedMembersResponse>> getAllMemberProfilesCategorized() {
+		return ResponseEntity.ok(megatronixTeamService.getAllMemberProfilesCategorized());
 	}
 
 	// Authorized endpoints
