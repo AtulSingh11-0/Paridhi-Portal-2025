@@ -186,6 +186,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
 	}
 
+	@ExceptionHandler(TeamPhotoNotFoundException.class)
+	public ResponseEntity<ErrorResponse> handleTeamPhotoNotFoundException(
+		TeamPhotoNotFoundException exception,
+		HttpServletRequest request
+	) {
+		ErrorResponse errorResponse = ErrorResponse.builder()
+			.status(HttpStatus.NOT_FOUND.value())
+			.message(exception.getMessage())
+			.error(HttpStatus.NOT_FOUND.getReasonPhrase())
+			.timestamp(LocalDateTime.now())
+			.path(request.getRequestURI())
+			.build();
+
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+	}
+
 	@Override
 	protected ResponseEntity<Object> handleNoHandlerFoundException(
 		@NonNull NoHandlerFoundException ex,
