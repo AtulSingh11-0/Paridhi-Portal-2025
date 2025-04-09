@@ -2,6 +2,8 @@ package com.megatronix.paridhi.service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +27,13 @@ public class TeamPhotoService {
 	private final CloudinaryService cloudinaryService;
 	private final TeamPhotoRepository teamPhotoRepository;
 
+	@CacheEvict(
+		value = {
+			"teamPhotos",
+			"teamPhotosByCategory"
+		},
+		allEntries = true
+	)
 	@Transactional
 	public TeamPhotoResponse saveTeamPhoto(Category category, MultipartFile teamPhotoImage, User user) {
 		log.info("Saving team photo for category: {}, by User: {}", category, user.getUsername());
@@ -49,6 +58,13 @@ public class TeamPhotoService {
 		return TeamPhotoResponse.fromTeamPhoto(savedTeam);
 	}
 
+	@CacheEvict(
+		value = {
+			"teamPhotos",
+			"teamPhotosByCategory"
+		},
+		allEntries = true
+	)
 	@Transactional
 	public TeamPhotoResponse updateTeamPhoto(Long id, Category category, MultipartFile teamPhotoImage, User user) {
 		log.info("Updating team photo for category: {}, by User: {}", category, user.getUsername());
@@ -83,6 +99,13 @@ public class TeamPhotoService {
 		return TeamPhotoResponse.fromTeamPhoto(updatedTeamPhoto);
 	}
 
+	@CacheEvict(
+		value = {
+			"teamPhotos",
+			"teamPhotosByCategory"
+		},
+		allEntries = true
+	)
 	@Transactional
 	public void deleteTeamPhoto(Long id, User user) {
 		log.info("Deleting team photo with ID: {}, by User: {}", id, user.getUsername());
@@ -106,6 +129,7 @@ public class TeamPhotoService {
 		log.info("Team photo deleted successfully: {}", existingTeamPhoto);
 	}
 
+	@Cacheable(value = "teamPhotosByCategory", key = "#category.name()")
 	public List<TeamPhotoResponse> getTeamPhotosByCategory(Category category) {
 		log.info("Fetching team photo for category: {}", category);
 
