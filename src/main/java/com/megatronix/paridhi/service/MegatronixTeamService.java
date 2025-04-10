@@ -119,7 +119,7 @@ public class MegatronixTeamService {
 	}
 
 	@Cacheable(value = "megatronixTeamMembers")
-	public List<CategorizedMembersResponse> getAllMemberProfilesCategorized() {
+	public CategorizedMembersResponse getAllMemberProfilesCategorized() {
     log.info("Fetching all member profiles");
     List<MegatronixTeam> membersPage = megatronixTeamRepository.findAll();
     
@@ -127,7 +127,7 @@ public class MegatronixTeamService {
     CategorizedMembersResponse categorizedResponse = categorizeMembers(membersPage);
     
     // Wrap it in a Page for consistent API response
-    return List.of(categorizedResponse);
+    return categorizedResponse;
 	}
 
 	private CategorizedMembersResponse categorizeMembers(List<MegatronixTeam> members) {

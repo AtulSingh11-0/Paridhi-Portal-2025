@@ -1,7 +1,5 @@
 package com.megatronix.paridhi.controller;
 
-import java.util.List;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,7 +30,7 @@ public class MegatronixTeamController {
 	// Public endpoints
 
 	@GetMapping
-	public ResponseEntity<List<CategorizedMembersResponse>> getAllMemberProfilesCategorized() {
+	public ResponseEntity<CategorizedMembersResponse> getAllMemberProfilesCategorized() {
 		return ResponseEntity.ok(megatronixTeamService.getAllMemberProfilesCategorized());
 	}
 
