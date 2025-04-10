@@ -35,6 +35,7 @@ public class SecurityConfig {
 		"/", // Landing page
 		"/api/auth/**", // Authentication endpoints
 		"/api/mrd/register", // MRD registration endpoint
+		"/api/contact", // Contact query submission endpoint (POST)
 		"/api/events", // Event endpoints
 		"/api/events/{id}", // Specific event endpoint
 		"/api/events/status", // Event status endpoints
@@ -47,9 +48,10 @@ public class SecurityConfig {
 		"/api/galleries", // Gallery endpoints
 		"/api/galleries/featured", // Featured gallery endpoints
 		"/api/galleries/{id}", // Specific gallery endpoint
-		"/api/megatronix-team/", // Megatronix team-member endpoints
+		"/api/megatronix-team", // Megatronix team-member endpoints
 		"/api/domain-posters", // Domain poster endpoints
 		"/api/domain-posters/{domainName}", // Specific domain poster endpoint
+		"/api/team-photo", // Team photo endpoints
 	};
 
   @Bean
