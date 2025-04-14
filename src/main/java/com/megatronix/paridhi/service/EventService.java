@@ -38,7 +38,173 @@ public class EventService {
   private final EventRepository eventRepository;
 	private final ComboRepository comboRepository;
 	private final CloudinaryService cloudinaryService;
+	private static final String EVENT = " event";
+	private static final String EVENT_NOT_FOUND = "Event not found with ID: ";
   
+	/*
+	 * public methods - doesn't require authentication
+	 */
+
+	@Cacheable(value = "events")
+  public List<EventResponse> getAllEvents() {
+    // log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.READ,
+			AppConstant.EVENT,
+			null,
+			"Fetching all events"
+    );
+    
+		// fetch all events from the database
+    List<Event> events = eventRepository.findAll();
+    
+		// log the successful retrieval of events
+    LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.READ,
+			AppConstant.EVENT,
+			null,
+			AppConstant.SUCCESSFULLY_RETRIEVED + events.size() + " events"
+    );
+    
+		// map events to EventResponse DTOs and return
+    return events.stream()
+			.map(EventResponse::fromEvent)
+			.toList();
+  }
+
+	@Cacheable(value = "eventsByDomain", key = "#domain.name()")
+  public List<EventResponse> getEventsByDomain(Domain domain) {
+    // log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.READ,
+			AppConstant.EVENT,
+			null,
+			"Fetching events by domain: " + domain
+    );
+    
+		// fetch events by domain from the database
+    List<Event> events = eventRepository.findByDomain(domain);
+    
+		// log the successful retrieval of events
+    LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.READ,
+			AppConstant.EVENT,
+			null,
+			AppConstant.SUCCESSFULLY_RETRIEVED + events.size() + " events for domain: " + domain
+    );
+    
+		// map events to EventResponse DTOs and return
+    return events.stream()
+			.map(EventResponse::fromEvent)
+			.toList();
+  }
+
+	@Cacheable(value = "eventsByRegistration", key = "#isRegistrationOpen")
+  public List<EventResponse> getEventsByRegistration(boolean isRegistrationOpen) {
+    // log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.READ,
+			AppConstant.EVENT,
+			null,
+			"Fetching events by registration status: " + (isRegistrationOpen ? AppConstant.OPEN : AppConstant.CLOSED)
+    );
+    
+		// fetch events by registration status from the database
+    List<Event> events = eventRepository.findByIsRegistrationOpen(isRegistrationOpen);
+    
+		// log the successful retrieval of events
+    LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.READ,
+			AppConstant.EVENT,
+			null,
+			AppConstant.SUCCESSFULLY_RETRIEVED + events.size() + " events with registration status: " + 
+			(isRegistrationOpen ? AppConstant.OPEN : AppConstant.CLOSED)
+    );
+    
+		// map events to EventResponse DTOs and return
+    return events.stream()
+			.map(EventResponse::fromEvent)
+			.toList();
+  }
+
+	@Cacheable(value = "eventsByType", key = "#eventType.name()")
+  public List<EventResponse> getEventsByType(EventType eventType) {
+    // log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.READ,
+			AppConstant.EVENT,
+			null,
+			"Fetching events by type: " + eventType
+    );
+    
+		// fetch events by type from the database
+    List<Event> events = eventRepository.findByEventType(eventType);
+    
+		// log the successful retrieval of events
+    LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.READ,
+			AppConstant.EVENT,
+			null,
+			AppConstant.SUCCESSFULLY_RETRIEVED + events.size() + " events of type: " + eventType
+    );
+    
+		// map events to EventResponse DTOs and return
+    return events.stream()
+			.map(EventResponse::fromEvent)
+			.toList();
+  }
+
+	@Cacheable(value = "eventById", key = "#eventId")
+  public EventResponse getEventById(Long eventId) {
+    // log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.READ,
+			AppConstant.EVENT,
+			null,
+			"Fetching event with ID: " + eventId
+    );
+    
+		// fetch event by ID from the database
+    Event event = eventRepository.findById(eventId)
+			.orElseThrow(() -> {
+				LoggingUtil.logError(
+					log,
+					MessageConstant.Operation.READ,
+					AppConstant.EVENT,
+					null,
+					EVENT_NOT_FOUND + eventId,
+					null
+				);
+				return new EventNotFoundException(eventId);
+			});
+    
+		// log the successful retrieval of the event
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.READ,
+			AppConstant.EVENT,
+			null,
+			"Successfully retrieved event ID: " + eventId + " - " + event.getName()
+		);
+
+		// map event to EventResponse DTO and return
+    return EventResponse.fromEvent(event);
+  }
+
+
+	/*
+	 * protected methods - requires authentication
+	 */
+
 	@CacheEvict(
 		value = {
 			"events", 
@@ -51,18 +217,19 @@ public class EventService {
 	)
 	@Transactional
   public EventResponse createEvent(EventRequest request, User user) {
+		// log the operation
     LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.CREATE,
-        AppConstant.EVENT,
-        user,
-        "Creating new event: " + request.getName() + " for domain: " + request.getDomain()
+			log,
+			MessageConstant.Operation.CREATE,
+			AppConstant.EVENT,
+			user,
+			"Creating new event: " + request.getName() + " for domain: " + request.getDomain()
     );
     
-    // Validate user access
-    checkUserAccess(user, "create");
+    // validate user access
+    checkUserAccess(user, MessageConstant.Operation.CREATE);
     
-    // Create Event Builder object
+    // create event builder object
     var event = Event.builder()
       .domain(request.getDomain())
       .name(request.getName())
@@ -81,146 +248,20 @@ public class EventService {
       .updatedBy(user)
       .build();
 
-    // Save event to database
+    // save event to database
     Event savedEvent = eventRepository.save(event);
     
+		// log the successful creation of the event
     LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.CREATE,
-        AppConstant.EVENT,
-        user,
-        "Successfully created event ID: " + savedEvent.getId() + " - " + savedEvent.getName()
+			log,
+			MessageConstant.Operation.CREATE,
+			AppConstant.EVENT,
+			user,
+			"Successfully created event ID: " + savedEvent.getId() + " - " + savedEvent.getName()
     );
 
-    // Return an EventResponse object
+    // return an EventResponse object
     return EventResponse.fromEvent(savedEvent);
-  }
-
-	@Cacheable(value = "events")
-  public List<EventResponse> getAllEvents() {
-    LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.READ,
-        AppConstant.EVENT,
-        null,
-        "Fetching all events"
-    );
-    
-    List<Event> events = eventRepository.findAll();
-    
-    LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.READ,
-        AppConstant.EVENT,
-        null,
-        AppConstant.SUCCESSFULLY_RETRIEVED + events.size() + " events"
-    );
-    
-    return events.stream()
-        .map(EventResponse::fromEvent)
-        .toList();
-  }
-
-	@Cacheable(value = "eventsByDomain", key = "#domain.name()")
-  public List<EventResponse> getEventsByDomain(Domain domain) {
-    LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.READ,
-        AppConstant.EVENT,
-        null,
-        "Fetching events by domain: " + domain
-    );
-    
-    List<Event> events = eventRepository.findByDomain(domain);
-    
-    LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.READ,
-        AppConstant.EVENT,
-        null,
-        AppConstant.SUCCESSFULLY_RETRIEVED + events.size() + " events for domain: " + domain
-    );
-    
-    return events.stream()
-        .map(EventResponse::fromEvent)
-        .toList();
-  }
-
-	@Cacheable(value = "eventsByRegistration", key = "#isRegistrationOpen")
-  public List<EventResponse> getEventsByRegistration(boolean isRegistrationOpen) {
-    LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.READ,
-        AppConstant.EVENT,
-        null,
-        "Fetching events by registration status: " + (isRegistrationOpen ? "OPEN" : "CLOSED")
-    );
-    
-    List<Event> events = eventRepository.findByIsRegistrationOpen(isRegistrationOpen);
-    
-    LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.READ,
-        AppConstant.EVENT,
-        null,
-        AppConstant.SUCCESSFULLY_RETRIEVED + events.size() + " events with registration status: " + 
-        (isRegistrationOpen ? "OPEN" : "CLOSED")
-    );
-    
-    return events.stream()
-        .map(EventResponse::fromEvent)
-        .toList();
-  }
-
-	@Cacheable(value = "eventsByType", key = "#eventType.name()")
-  public List<EventResponse> getEventsByType(EventType eventType) {
-    LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.READ,
-        AppConstant.EVENT,
-        null,
-        "Fetching events by type: " + eventType
-    );
-    
-    List<Event> events = eventRepository.findByEventType(eventType);
-    
-    LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.READ,
-        AppConstant.EVENT,
-        null,
-        AppConstant.SUCCESSFULLY_RETRIEVED + events.size() + " events of type: " + eventType
-    );
-    
-    return events.stream()
-        .map(EventResponse::fromEvent)
-        .toList();
-  }
-
-	@Cacheable(value = "eventById", key = "#eventId")
-  public EventResponse getEventById(Long eventId) {
-    LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.READ,
-        AppConstant.EVENT,
-        null,
-        "Fetching event with ID: " + eventId
-    );
-    
-    Event event = eventRepository.findById(eventId)
-        .orElseThrow(() -> {
-            LoggingUtil.logError(
-                log,
-                MessageConstant.Operation.READ,
-                AppConstant.EVENT,
-                null,
-								"Event not found with ID: " + eventId,
-                null
-            );
-            return new EventNotFoundException(eventId);
-        });
-    
-    return EventResponse.fromEvent(event);
   }
 
 	@CacheEvict(
@@ -235,32 +276,33 @@ public class EventService {
 	)
 	@Transactional
   public EventResponse updateEvent(Long eventId, EventRequest request, User user) {
-    LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.UPDATE,
-        AppConstant.EVENT,
-        user,
-        "Updating event with ID: " + eventId
+    // log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.UPDATE,
+			AppConstant.EVENT,
+			user,
+			"Updating event with ID: " + eventId
     );
     
-    // Validate user access
-    checkUserAccess(user, "update");
+    // validate user access
+    checkUserAccess(user, MessageConstant.Operation.UPDATE);
     
-    // Check if the event exists
+    // check if the event exists
     var existingEvent = eventRepository.findById(eventId)
-        .orElseThrow(() -> {
-            LoggingUtil.logError(
-                log,
-                MessageConstant.Operation.UPDATE,
-                AppConstant.EVENT,
-                user,
-                "Event not found with ID: " + eventId,
-                null
-            );
-            return new EventNotFoundException(eventId);
-        });
+			.orElseThrow(() -> {
+				LoggingUtil.logError(
+					log,
+					MessageConstant.Operation.UPDATE,
+					AppConstant.EVENT,
+					user,
+					EVENT_NOT_FOUND + eventId,
+					null
+				);
+				return new EventNotFoundException(eventId);
+			});
     
-    // Update Event fields
+    // update event fields
     existingEvent.setDomain(request.getDomain());
     existingEvent.setName(request.getName());
     existingEvent.setEventType(request.getEventType());
@@ -275,18 +317,19 @@ public class EventService {
     existingEvent.setPrizePool(request.getPrizePool());
     existingEvent.setUpdatedBy(user);
     
-    // Save updated event to database
+    // save updated event to database
     var updatedEvent = eventRepository.save(existingEvent);
     
+		// log the successful update of the event
     LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.UPDATE,
-        AppConstant.EVENT,
-        user,
-        "Successfully updated event ID: " + eventId + " - " + updatedEvent.getName()
+			log,
+			MessageConstant.Operation.UPDATE,
+			AppConstant.EVENT,
+			user,
+			"Successfully updated event ID: " + eventId + " - " + updatedEvent.getName()
     );
     
-    // Return an EventResponse object
+    // return an EventResponse object
     return EventResponse.fromEvent(updatedEvent);
   }
 
@@ -302,105 +345,110 @@ public class EventService {
 	)
 	@Transactional
   public void deleteEvent(Long eventId, User user) {
-    LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.DELETE,
-        AppConstant.EVENT,
-        user,
-        "Deleting event with ID: " + eventId
+    // log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.DELETE,
+			AppConstant.EVENT,
+			user,
+			"Deleting event with ID: " + eventId
     );
     
-    // Validate user access
-    checkUserAccess(user, "delete");
+    // validate user access
+    checkUserAccess(user, MessageConstant.Operation.DELETE);
     
-    // Get event by ID
+    // get event by ID
     var existingEvent = eventRepository.findById(eventId)
-        .orElseThrow(() -> {
-            LoggingUtil.logError(
-                log,
-                MessageConstant.Operation.DELETE,
-                AppConstant.EVENT,
-                user,
-                "Event not found with ID: " + eventId,
-                null
-            );
-            return new EventNotFoundException(eventId);
-        });
+			.orElseThrow(() -> {
+				LoggingUtil.logError(
+					log,
+					MessageConstant.Operation.DELETE,
+					AppConstant.EVENT,
+					user,
+					EVENT_NOT_FOUND + eventId,
+					null
+				);
+				return new EventNotFoundException(eventId);
+			});
     
-    // Handle teams that reference this event
+    // handle teams that reference this event
     List<Team> teams = teamRepository.findByEvent(existingEvent);
     if (!teams.isEmpty()) {
-        LoggingUtil.logOperation(
-            log,
-            MessageConstant.Operation.DELETE,
-            AppConstant.EVENT,
-            user,
-            "Deleting " + teams.size() + " teams associated with event: " + existingEvent.getName()
-        );
-        teamRepository.deleteAll(teams);			
+			LoggingUtil.logOperation(
+				log,
+				MessageConstant.Operation.DELETE,
+				AppConstant.EVENT,
+				user,
+				"Deleting " + teams.size() + " teams associated with event: " + existingEvent.getName()
+			);
+			teamRepository.deleteAll(teams);			
     }
     
-    // Handle many-to-many relationship with combo
+    // handle many-to-many relationship with combo
     Set<EventCombo> combos = comboRepository.findByEventsContaining(existingEvent);
     if (!combos.isEmpty()) {
-        LoggingUtil.logOperation(
-            log,
-            MessageConstant.Operation.UPDATE,
-            "EventCombo",
-            user,
-            "Updating " + combos.size() + " combos that contain event ID: " + eventId
-        );
-        
-        for (EventCombo combo : combos) {
-            combo.getEvents().remove(existingEvent);
-            if (combo.getEvents().size() < 2) {
-                comboRepository.delete(combo);
-                LoggingUtil.logOperation(
-                    log,
-                    MessageConstant.Operation.DELETE,
-                    "EventCombo",
-                    user,
-                    "Deleting combo ID: " + combo.getId() + " as it has fewer than 2 events"
-                );
-            } else {
-                comboRepository.save(combo);
-            }
-        }
+			LoggingUtil.logOperation(
+				log,
+				MessageConstant.Operation.UPDATE,
+				AppConstant.EVENT_COMBO,
+				user,
+				"Updating " + combos.size() + " combos that contain event ID: " + eventId
+			);
+			
+			// remove the event from each combo
+			for (EventCombo combo : combos) {
+				combo.getEvents().remove(existingEvent);
+				// if the combo has fewer than 2 events, delete it
+				if (combo.getEvents().size() < 2) {
+					comboRepository.delete(combo);
+					LoggingUtil.logOperation(
+						log,
+						MessageConstant.Operation.DELETE,
+						AppConstant.EVENT_COMBO,
+						user,
+						"Deleting combo ID: " + combo.getId() + " as it has fewer than 2 events"
+					);
+				} else {
+					// save the updated combo
+					comboRepository.save(combo);
+				}
+			}
     }
     
-    // Delete image from cloudinary if exists
+    // delete image from cloudinary if exists
     if (existingEvent.getEventPicturePublicId() != null) {
-        try {
-            LoggingUtil.logOperation(
-                log,
-                MessageConstant.Operation.DELETE,
-                AppConstant.CLOUDINARY_IMAGE,
-                user,
-                "Deleting image with public ID: " + existingEvent.getEventPicturePublicId()
-            );
-            cloudinaryService.deleteFile(existingEvent.getEventPicturePublicId());
-        } catch (Exception e) {
-            LoggingUtil.logError(
-                log,
-                MessageConstant.Operation.DELETE,
-                AppConstant.CLOUDINARY_IMAGE,
-                user,
-                "Failed to delete image for event ID: " + eventId + " - Error: " + e.getMessage(),
-                e
-            );
-            // Continue with event deletion even if image deletion fails
-        }
+			try {
+				LoggingUtil.logOperation(
+					log,
+					MessageConstant.Operation.DELETE,
+					AppConstant.CLOUDINARY_IMAGE,
+					user,
+					"Deleting image with public ID: " + existingEvent.getEventPicturePublicId()
+				);
+				cloudinaryService.deleteFile(existingEvent.getEventPicturePublicId());
+			} catch (Exception e) {
+				LoggingUtil.logError(
+					log,
+					MessageConstant.Operation.DELETE,
+					AppConstant.CLOUDINARY_IMAGE,
+					user,
+					"Failed to delete image for event ID: " + eventId + " - Error: " + e.getMessage(),
+					e
+				);
+				// continue with event deletion even if image deletion fails
+			}
     }
     
-    // Delete event from database
+    // delete event from database
     eventRepository.delete(existingEvent);
     
+		// log the successful deletion of the event
     LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.DELETE,
-        AppConstant.EVENT,
-        user,
-        "Successfully deleted event ID: " + eventId + " - " + existingEvent.getName()
+			log,
+			MessageConstant.Operation.DELETE,
+			AppConstant.EVENT,
+			user,
+			"Successfully deleted event ID: " + eventId + " - " + existingEvent.getName()
     );
   }
 
@@ -415,51 +463,53 @@ public class EventService {
 		allEntries = true
 	)
 	@Transactional
-  public EventResponse toggleRegistrationStatus(Long id, User user) {
-    LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.UPDATE,
-        AppConstant.EVENT,
-        user,
-        "Toggling registration status for event with ID: " + id
+  public EventResponse toggleRegistrationStatus(Long eventId, User user) {
+    // log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.UPDATE,
+			AppConstant.EVENT,
+			user,
+			"Toggling registration status for event with ID: " + eventId
     );
     
-    // Validate user access
+    // validate user access
     checkUserAccess(user, "toggle registration status of");
     
-    // Fetch event by ID
-    var existingEvent = eventRepository.findById(id)
-        .orElseThrow(() -> {
-            LoggingUtil.logError(
-                log,
-                MessageConstant.Operation.UPDATE,
-                AppConstant.EVENT,
-                user,
-                "Event not found with ID: " + id,
-                null
-            );
-            return new EventNotFoundException(id);
-        });
+    // fetch event by ID
+    var existingEvent = eventRepository.findById(eventId)
+			.orElseThrow(() -> {
+				LoggingUtil.logError(
+					log,
+					MessageConstant.Operation.UPDATE,
+					AppConstant.EVENT,
+					user,
+					EVENT_NOT_FOUND + eventId,
+					null
+				);
+				return new EventNotFoundException(eventId);
+			});
     
-    // Get current status for logging
+    // get current status for logging
     boolean currentStatus = existingEvent.isRegistrationOpen();
     boolean newStatus = !currentStatus;
     
-    // Update registration status
+    // update registration status
     existingEvent.setRegistrationOpen(newStatus);
     var updatedEvent = eventRepository.save(existingEvent);
     
+		// log the successful update of registration status
     LoggingUtil.logOperation(
-        log,
-        MessageConstant.Operation.UPDATE,
-        AppConstant.EVENT,
-        user,
-        "Successfully updated registration status for event ID: " + id + 
-        " - Name: " + updatedEvent.getName() + 
-        " - Status: " + (currentStatus ? "OPEN → CLOSED" : "CLOSED → OPEN")
+			log,
+			MessageConstant.Operation.UPDATE,
+			AppConstant.EVENT,
+			user,
+			"Successfully updated registration status for event ID: " + eventId + 
+			" - Name: " + updatedEvent.getName() + 
+			" - Status: " + (currentStatus ? "OPEN -> CLOSED" : "CLOSED -> OPEN")
     );
     
-    // Return updated event
+    // return updated event
     return EventResponse.fromEvent(updatedEvent);
   }
 
@@ -474,33 +524,62 @@ public class EventService {
 		allEntries = true
 	)
 	@Transactional
-	public EventResponse updateEventImage(Long id, MultipartFile file, User user) {
-		LoggingUtil.logOperation(
-            log,
-            MessageConstant.Operation.UPDATE,
-            AppConstant.EVENT_IMAGE,
-            user,
-            "Updating image for event with ID: " + id + " - File: " + file.getOriginalFilename() + " (" + file.getSize() + " bytes)"
-        );
+	public EventResponse updateEventImage(Long eventId, MultipartFile file, User user) {
 		
-		// Validate user access
+		// validate file type and size
+		String contentType = file.getContentType();
+		if (file.isEmpty() || contentType == null || !contentType.startsWith("image/")) {
+			LoggingUtil.logError(
+				log,
+				MessageConstant.Operation.UPDATE,
+				AppConstant.EVENT_IMAGE,
+				user,
+				"Invalid file type or empty file for event ID: " + eventId,
+				null
+			);
+			throw new IllegalArgumentException("Invalid file type or empty file.");
+		}
+
+		// check file size
+		if (file.getSize() > AppConstant.MAX_IMAGE_SIZE) {
+			LoggingUtil.logError(
+				log,
+				MessageConstant.Operation.UPDATE,
+				AppConstant.EVENT_IMAGE,
+				user,
+				"File size exceeds limit for event ID: " + eventId + " - Size: " + file.getSize(),
+				null
+			);
+			throw new IllegalArgumentException("File size exceeds limit.");
+		}
+
+		// log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.UPDATE,
+			AppConstant.EVENT_IMAGE,
+			user,
+			"Updating image for event with ID: " + eventId + " - File: " + file.getOriginalFilename() + " (" + file.getSize() + " bytes)"
+		);
+		
+		// validate user access
 		checkUserAccess(user, "update image of");
 		
-		// Fetch event by ID
-		var existingEvent = eventRepository.findById(id)
+		// fetch event by ID
+		var existingEvent = eventRepository.findById(eventId)
 			.orElseThrow(() -> {
 				LoggingUtil.logError(
 					log,
 					MessageConstant.Operation.UPDATE,
 					AppConstant.EVENT_IMAGE,
 					user,
-					"Event not found with ID: " + id,
+					EVENT_NOT_FOUND + eventId,
 					null
 				);
-				return new EventNotFoundException(id);
+				return new EventNotFoundException(eventId);
 			});
 			
-		// Clean up previous image if it exists
+		// clean up previous image if it exists
 		if (existingEvent.getEventPicturePublicId() != null) {
 			try {
 				LoggingUtil.logOperation(
@@ -518,74 +597,82 @@ public class EventService {
 					MessageConstant.Operation.DELETE,
 					AppConstant.CLOUDINARY_IMAGE,
 					user,
-					"Failed to delete previous image for event ID: " + id + " - Continuing with upload - Error: " + e.getMessage(),
+					"Failed to delete previous image for event ID: " + eventId + " - Continuing with upload - Error: " + e.getMessage(),
 					e
 				);
-				// Continue with upload even if previous image deletion fails
+				// continue with upload even if previous image deletion fails
 			}
 		}
 
-		// Upload image to cloudinary - exceptions will be propagated to GlobalExceptionHandler
+		// upload image to cloudinary - exceptions will be propagated to GlobalExceptionHandler
 		LoggingUtil.logOperation(
 			log,
 			MessageConstant.Operation.CREATE,
 			AppConstant.CLOUDINARY_IMAGE,
 			user,
-			"Uploading new image for event ID: " + id
+			"Uploading new image for event ID: " + eventId
 		);
 		
 		var imageDetails = cloudinaryService.uploadFile(file);
 
-		// Update event image URL
+		// update event image URL
 		existingEvent.setEventPictureSecureUrl(imageDetails.get("secure_url"));
 		existingEvent.setEventPicturePublicId(imageDetails.get("public_id"));
 		existingEvent.setUpdatedBy(user);
 
-		// Save updated event to database
+		// save updated event to database
 		var updatedEvent = eventRepository.save(existingEvent);
 		
+		// log the successful update of the event image
 		LoggingUtil.logOperation(
 			log,
 			MessageConstant.Operation.UPDATE,
 			AppConstant.EVENT_IMAGE,
 			user,
-			"Successfully updated image for event ID: " + id + 
+			"Successfully updated image for event ID: " + eventId + 
 			" - New image public ID: " + imageDetails.get("public_id")
 		);
 
-		// Return an EventResponse object
+		// return an EventResponse object
 		return EventResponse.fromEvent(updatedEvent);
 	}
 
+	/*
+	 * private methods - used internally only
+	 */
+
   private void checkUserAccess(User user, String methodType) {
-    if (user == null) {
-        LoggingUtil.logSecurity(
-            log,
-            "access_denied",
-            null,
-            "FAILED",
-            "Authentication required to " + methodType + " event"
-        );
-        throw new ForbiddenAccessException(MessageConstant.UserMessage.ACCESS_DENIED);
+    // check if user is null
+		if (user == null) {
+			LoggingUtil.logSecurity(
+				log,
+				AppConstant.ACCESS_DENIED,
+				null,
+				AppConstant.FAILED,
+				"Authentication required to " + methodType + EVENT
+			);
+			throw new ForbiddenAccessException(MessageConstant.UserMessage.ACCESS_DENIED);
     }
     
+		// check if user has ROLE_USER
     if (user.getRole().equals(Role.ROLE_USER)) {
-        LoggingUtil.logSecurity(
-            log,
-            "access_denied",
-            user,
-            "FAILED",
-            "User lacks permission to " + methodType + " event"
-        );
-        throw new ForbiddenAccessException(MessageConstant.UserMessage.ACCESS_DENIED);
+			LoggingUtil.logSecurity(
+				log,
+				AppConstant.ACCESS_DENIED,
+				user,
+				AppConstant.FAILED,
+				"User lacks permission to " + methodType + EVENT
+			);
+			throw new ForbiddenAccessException(MessageConstant.UserMessage.ACCESS_DENIED);
     }
     
+		// log the successful authorization
     LoggingUtil.logSecurity(
-        log,
-        "access_granted",
-        user,
-        "SUCCESS",
-        "User authorized to " + methodType + " event"
+			log,
+			AppConstant.ACCESS_GRANTED,
+			user,
+			AppConstant.SUCCESS,
+			"User authorized to " + methodType + EVENT
     );
   }
 }
