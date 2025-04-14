@@ -109,7 +109,7 @@ public class EmailService {
 
 	@Async
 	public void sendEventRegistration(String[] to, String eventName, String teamName, String tid) {
-		log.info("Sending event registration confirmation to {}", to);
+		log.info("Sending event registration confirmation to {}", (Object)to);
 
 		// create simple mail message
 		try {
@@ -121,7 +121,7 @@ public class EmailService {
 			helper.setText(getRDContent(teamName, eventName, tid), true);
 
 			javaMailSender.send(message);
-			log.info("Event registration confirmation sent successfully to {}", to);
+			log.info("Event registration confirmation sent successfully to {}", (Object)to);
 		} catch (MessagingException e) {
 			log.error("Failed to send event registration confirmation to {}", to, e);
 			throw new MailSendingException("Failed to send event registration confirmation " + e.getMessage(), e.getCause());
