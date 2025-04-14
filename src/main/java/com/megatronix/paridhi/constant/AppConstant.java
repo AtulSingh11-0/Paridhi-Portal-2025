@@ -3,6 +3,9 @@ package com.megatronix.paridhi.constant;
 public class AppConstant {
 	private AppConstant() {}
 
+	public static final String PUBLIC_ID = "public_id";
+	public static final String SECURE_URL = "secure_url";
+
 	public static final String REQUEST_ID = "requestId";
 	public static final String CLIENT_IP = "clientIp";
 	public static final String USER_AGENT = "userAgent";
@@ -35,6 +38,7 @@ public class AppConstant {
 	public static final String PROFILE = "Profile";
 	public static final String EVENT_COMBO = "EventCombo";
 	public static final String EVENT_IMAGE = "EventImage";
+	public static final String TEAM_PHOTO = "TeamPhoto";
 	public static final String COMBO_IMAGE = "ComboImage";
 	public static final String CLOUDINARY_IMAGE = "CloudinaryImage";
 	public static final String CONTACT_QUERY = "ContactQuery";
