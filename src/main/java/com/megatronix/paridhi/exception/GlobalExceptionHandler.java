@@ -26,7 +26,9 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import com.megatronix.paridhi.constant.MessageConstant;
 import com.megatronix.paridhi.dto.response.ErrorResponse;
+import com.megatronix.paridhi.util.LoggingUtil;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -95,13 +97,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		EventNotFoundException exception,
 		HttpServletRequest request
 	) {
-		ErrorResponse errorResponse = ErrorResponse.builder()
-			.status(HttpStatus.NOT_FOUND.value())
-			.message(exception.getMessage())
-			.error(HttpStatus.NOT_FOUND.getReasonPhrase())
-			.timestamp(LocalDateTime.now())
-			.path(request.getRequestURI())
-			.build();
+		// Log detailed message for debugging
+    log.error("Event not found: {} | Path: {} | IP: {}", 
+              exception.getMessage(), 
+              request.getRequestURI(),
+              LoggingUtil.getClientIp(request));
+    
+    // Return generic message to user
+    ErrorResponse errorResponse = ErrorResponse.builder()
+        .status(HttpStatus.NOT_FOUND.value())
+        .message(MessageConstant.UserMessage.RESOURCE_NOT_FOUND)
+        .error(HttpStatus.NOT_FOUND.getReasonPhrase())
+        .timestamp(LocalDateTime.now())
+        .path(request.getRequestURI())
+        .build();
 
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
 	}
