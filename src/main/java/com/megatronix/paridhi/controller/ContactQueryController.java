@@ -48,20 +48,22 @@ public class ContactQueryController {
 	@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
 	@GetMapping
 	public ResponseEntity<List<ContactQueryResponse>> getAllQueries(
-		@RequestParam(required = false) Boolean resolved
+		@RequestParam(required = false) Boolean resolved,
+		@AuthenticationPrincipal User user
 	) {
 		if (resolved != null) {	
-			return ResponseEntity.ok(contactQueryService.getQueriesByResolutionStatus(resolved));
+			return ResponseEntity.ok(contactQueryService.getQueriesByResolutionStatus(resolved, user));
 		}
-		return ResponseEntity.ok(contactQueryService.getAllQueries());
+		return ResponseEntity.ok(contactQueryService.getAllQueries(user));
 	}
     
 	@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
 	@GetMapping("/{id}")
 	public ResponseEntity<ContactQueryResponse> getQueryById(
-		@PathVariable Long id
+		@PathVariable Long id,
+		@AuthenticationPrincipal User user
 	) {
-		return ResponseEntity.ok(contactQueryService.getQueryById(id));
+		return ResponseEntity.ok(contactQueryService.getQueryById(id, user));
 	}
 
 	@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
