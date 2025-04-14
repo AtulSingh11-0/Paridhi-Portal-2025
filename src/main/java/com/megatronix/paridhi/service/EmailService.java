@@ -1,13 +1,17 @@
 package com.megatronix.paridhi.service;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.megatronix.paridhi.constant.MessageConstant;
 import com.megatronix.paridhi.constant.Position;
 import com.megatronix.paridhi.exception.MailSendingException;
+import com.megatronix.paridhi.util.LoggingUtil;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -18,100 +22,160 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class EmailService {
-  private final JavaMailSender javaMailSender;
-
-  @Value("${spring.mail.username}")
-  private String fromEmail;
-
-  @Async
-  public void sendPasswordResetToken(String to, String token, String name) {
-    log.info("Sending password reset token to {}", to);
-
-    // create simple mail message
-    try {
-      MimeMessage message = javaMailSender.createMimeMessage();
-      MimeMessageHelper helper = new MimeMessageHelper(message, true);
-      helper.setFrom(fromEmail);
-      helper.setTo(to);
-      helper.setSubject("Paridhi 2025 - Password Reset Token Request");
-      helper.setText(getResetTokenContent(name, token), true);
-
-      javaMailSender.send(message);
-      log.info("Password reset token sent successfully to {}", to);
-    } catch (MessagingException e) {
-      log.error("Failed to send password reset token to {}", to, e);
-      throw new MailSendingException("Failed to send password reset token " + e.getMessage(), e.getCause());
-    }
-  }
-
-  @Async
-  public void sendVerificationOtp(String to, String otp, String name) {
-    log.info("Sending verification OTP to {}", to);
-
-    // create simple mail message
-    try {
-      MimeMessage message = javaMailSender.createMimeMessage();
-      MimeMessageHelper helper = new MimeMessageHelper(message, true);
-      helper.setFrom(fromEmail);
-      helper.setTo(to);
-      helper.setSubject("Paridhi 2025 - Email Verification");
-      helper.setText(getOtpContent(name, otp), true);
-
-      javaMailSender.send(message);
-      log.info("Verification OTP sent successfully to {}", to);
-    } catch (MessagingException e) {
-      log.error("Failed to send verification OTP to {}", to, e);
-      throw new MailSendingException("Failed to send verification OTP " + e.getMessage(), e.getCause());
-    }
-  }
-
-  @Async
-  public void sendMRDConfirmation(String to, String gid, String name) {
-    log.info("Sending MRD registration confirmation to {}", to);
-
-    // create simple mail message
-    try {
-      MimeMessage message = javaMailSender.createMimeMessage();
-      MimeMessageHelper helper = new MimeMessageHelper(message, true);
-      helper.setFrom(fromEmail);
-      helper.setTo(to);
-      helper.setSubject("Paridhi 2025 - Registration Confirmation");
-      helper.setText(getMRDContent(name, gid), true);
-
-      javaMailSender.send(message);
-      log.info("MRD Registration confirmation sent successfully to {}", to);
-    } catch (MessagingException e) {
-      log.error("Failed to send MRD registration confirmation to {}", to, e);
-      throw new MailSendingException("Failed to send MRD registration confirmation " + e.getMessage(), e.getCause());
-    }
-  }
-
-  @Async
-  public void sendEventRegistration(String to, String eventName, String teamName, String tid) {
-    log.info("Sending event registration confirmation to {}", to);
-
-    // create simple mail message
-    try {
-      MimeMessage message = javaMailSender.createMimeMessage();
-      MimeMessageHelper helper = new MimeMessageHelper(message, true);
-      helper.setFrom(fromEmail);
-      helper.setTo(to);
-      helper.setSubject("Paridhi 2025 - Event Registration Confirmation");
-      helper.setText(getRDContent(teamName, eventName, tid), true);
-
-      javaMailSender.send(message);
-      log.info("Event registration confirmation sent successfully to {}", to);
-    } catch (MessagingException e) {
-      log.error("Failed to send event registration confirmation to {}", to, e);
-      throw new MailSendingException("Failed to send event registration confirmation " + e.getMessage(), e.getCause());
-    }
-  }
+	@Value("${spring.mail.username}")
+	private String fromEmail;
+	private final JavaMailSender javaMailSender;
+	private static final String ERROR = " - Error: ";
+	private static final String TEAM = ", team: ";
+	private static final String RECIPIENTS = " recipients";
+	private static final String RECIPIENTS_ERROR = " recipients - Error: ";
+	private static final String RECIPIENTS_FOR_EVENT = " recipients for event: ";
+	
+	private static final String EMAIL_SERVICE = "EmailService";
 
 	@Async
-	public void sendEventRegistration(String[] to, String eventName, String teamName, String tid) {
-		log.info("Sending event registration confirmation to {}", (Object)to);
+	public CompletableFuture<Void> sendPasswordResetToken(String to, String name, String token) {
+		// log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.CREATE,
+			EMAIL_SERVICE,
+			null,
+			"Sending password reset email to: " + to + ", with token: " + token.substring(0, 5) + "..."
+		);
 
-		// create simple mail message
+		try {
+			MimeMessage message = javaMailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(message, true);
+			helper.setFrom(fromEmail);
+			helper.setTo(to);
+			helper.setSubject("Paridhi 2025 - Password Reset Request");
+			helper.setText(getResetTokenContent(name, token), true);
+
+			javaMailSender.send(message);
+			
+			// log the successful email sending
+			LoggingUtil.logOperation(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Successfully sent password reset email to: " + to
+			);
+			
+			return CompletableFuture.completedFuture(null);
+		} catch (MessagingException e) {
+			LoggingUtil.logError(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Failed to send password reset email to: " + to + ERROR + e.getMessage(),
+				e
+			);
+			throw new MailSendingException("Failed to send password reset email: " + e.getMessage(), e.getCause());
+		}
+	}
+
+	@Async
+	public CompletableFuture<Void> sendOtp(String to, String name, String otp) {
+		// log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.CREATE,
+			EMAIL_SERVICE,
+			null,
+			"Sending OTP email to: " + to
+		);
+
+		try {
+			MimeMessage message = javaMailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(message, true);
+			helper.setFrom(fromEmail);
+			helper.setTo(to);
+			helper.setSubject("Paridhi 2025 - Email Verification OTP");
+			helper.setText(getOtpContent(name, otp), true);
+
+			javaMailSender.send(message);
+			
+			// log the successful email sending
+			LoggingUtil.logOperation(
+					log,
+					MessageConstant.Operation.CREATE,
+					EMAIL_SERVICE,
+					null,
+					"Successfully sent OTP email to: " + to
+			);
+			
+			return CompletableFuture.completedFuture(null);
+		} catch (MessagingException e) {
+			LoggingUtil.logError(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Failed to send OTP email to: " + to + ERROR + e.getMessage(),
+				e
+			);
+			throw new MailSendingException("Failed to send OTP email: " + e.getMessage(), e.getCause());
+		}
+	}
+
+	@Async
+	public CompletableFuture<Void> sendMRDWelcome(String to, String name, String gid) {
+		// log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.CREATE,
+			EMAIL_SERVICE,
+			null,
+			"Sending MRD welcome email to: " + to + ", with GID: " + gid
+		);
+
+		try {
+			MimeMessage message = javaMailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(message, true);
+			helper.setFrom(fromEmail);
+			helper.setTo(to);
+			helper.setSubject("Paridhi 2025 - Welcome & Registration Details");
+			helper.setText(getMRDContent(name, gid), true);
+
+			javaMailSender.send(message);
+			
+			// log the successful email sending
+			LoggingUtil.logOperation(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Successfully sent MRD welcome email to: " + to
+			);
+			
+			return CompletableFuture.completedFuture(null);
+		} catch (MessagingException e) {
+			LoggingUtil.logError(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Failed to send MRD welcome email to: " + to + ERROR + e.getMessage(),
+				e
+			);
+			throw new MailSendingException("Failed to send MRD welcome email: " + e.getMessage(), e.getCause());
+		}
+	}
+
+	@Async
+	public CompletableFuture<Void> sendEventRegistration(String[] to, String eventName, String teamName, String tid) {
+		// log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.CREATE,
+			EMAIL_SERVICE,
+			null,
+			"Sending event registration email to " + to.length + RECIPIENTS_FOR_EVENT+ eventName + TEAM + teamName
+		);
+
 		try {
 			MimeMessage message = javaMailSender.createMimeMessage();
 			MimeMessageHelper helper = new MimeMessageHelper(message, true);
@@ -121,16 +185,40 @@ public class EmailService {
 			helper.setText(getRDContent(teamName, eventName, tid), true);
 
 			javaMailSender.send(message);
-			log.info("Event registration confirmation sent successfully to {}", (Object)to);
+			
+			// log the successful email sending
+			LoggingUtil.logOperation(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Successfully sent event registration email to " + to.length + RECIPIENTS
+			);
+			
+			return CompletableFuture.completedFuture(null);
 		} catch (MessagingException e) {
-			log.error("Failed to send event registration confirmation to {}", to, e);
-			throw new MailSendingException("Failed to send event registration confirmation " + e.getMessage(), e.getCause());
+			LoggingUtil.logError(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Failed to send event registration email to " + to.length + RECIPIENTS_ERROR + e.getMessage(),
+				e
+			);
+			throw new MailSendingException("Failed to send event registration email: " + e.getMessage(), e.getCause());
 		}
 	}
 
 	@Async
-	public void sendQualificationCongratulations(String[] to, String eventName, String teamName, String tid) {
-		log.info("Sending qualification congratulations to {}", (Object)to);
+	public CompletableFuture<Void> sendQualificationCongratulations(String[] to, String eventName, String teamName, String tid) {
+		// log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.CREATE,
+			EMAIL_SERVICE,
+			null,
+			"Sending qualification congratulations to " + to.length + RECIPIENTS_FOR_EVENT+ eventName + TEAM + teamName
+		);
 
 		try {
 			MimeMessage message = javaMailSender.createMimeMessage();
@@ -141,52 +229,118 @@ public class EmailService {
 			helper.setText(getQualificationContent(teamName, eventName, tid), true);
 
 			javaMailSender.send(message);
-			log.info("Qualification congratulations sent successfully to {}", (Object)to);
+			
+			// log the successful email sending
+			LoggingUtil.logOperation(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Successfully sent qualification congratulations to " + to.length + RECIPIENTS
+			);
+			
+			return CompletableFuture.completedFuture(null);
 		} catch (MessagingException e) {
-			log.error("Failed to send qualification congratulations to {}", (Object)to, e);
-			throw new MailSendingException("Failed to send qualification congratulations " + e.getMessage(), e.getCause());
+			LoggingUtil.logError(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Failed to send qualification congratulations to " + to.length + RECIPIENTS_ERROR + e.getMessage(),
+				e
+			);
+			throw new MailSendingException("Failed to send qualification congratulations: " + e.getMessage(), e.getCause());
 		}
 	}
 
 	@Async
-	public void sendPositionCongratulations(String[] to, String eventName, String teamName, String tid, Position position) {
-		log.info("Sending position congratulations to {}", (Object)to);
+	public CompletableFuture<Void> sendPositionCongratulations(String[] to, String eventName, String teamName, String tid, Position position) {
+		// log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.CREATE,
+			EMAIL_SERVICE,
+			null,
+			"Sending position congratulations to " + to.length + RECIPIENTS_FOR_EVENT+ eventName + 
+			TEAM + teamName + ", position: " + position
+		);
 
 		try {
 			MimeMessage message = javaMailSender.createMimeMessage();
-			MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+			MimeMessageHelper helper = new MimeMessageHelper(message, true);
 			helper.setFrom(fromEmail);
 			helper.setTo(to);
-			helper.setSubject("Paridhi 2025 - Congratulations on Your Achievement!");
+			helper.setSubject("Paridhi 2025 - Congratulations on Securing " + position + " Position!");
 			helper.setText(getPositionContent(teamName, eventName, tid, position), true);
 
 			javaMailSender.send(message);
-			log.info("Position congratulations sent successfully to {}", (Object)to);
+			
+			// log the successful email sending
+			LoggingUtil.logOperation(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Successfully sent position congratulations to " + to.length + RECIPIENTS
+			);
+			
+			return CompletableFuture.completedFuture(null);
 		} catch (MessagingException e) {
-			log.error("Failed to send position congratulations to {}", (Object)to, e);
-			throw new MailSendingException("Failed to send position congratulations " + e.getMessage(), e.getCause());
+			LoggingUtil.logError(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Failed to send position congratulations to " + to.length + RECIPIENTS_ERROR + e.getMessage(),
+				e
+			);
+			throw new MailSendingException("Failed to send position congratulations: " + e.getMessage(), e.getCause());
 		}
 	}
 
 	@Async
-public void sendQueryResolution(String to, String name, String query, String response) {
-	log.info("Sending query resolution to {}", to);
+	public CompletableFuture<Void> sendQueryResolution(String to, String name, String query, String response) {
+		// log the operation	
+		LoggingUtil.logOperation(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Sending query resolution to: " + to
+			);
 
-	try {
-		MimeMessage message = javaMailSender.createMimeMessage();
-		MimeMessageHelper helper = new MimeMessageHelper(message, true);
-		helper.setFrom(fromEmail);
-		helper.setTo(to);
-		helper.setSubject("Paridhi 2025 - Response to Your Query");
-		helper.setText(getQueryResolutionContent(name, query, response), true);
+		try {
+			MimeMessage message = javaMailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(message, true);
+			helper.setFrom(fromEmail);
+			helper.setTo(to);
+			helper.setSubject("Paridhi 2025 - Response to Your Query");
+			helper.setText(getQueryResolutionContent(name, query, response), true);
 
-		javaMailSender.send(message);
-		log.info("Query resolution sent successfully to {}", to);
-	} catch (MessagingException e) {
-		log.error("Failed to send query resolution to {}", to, e);
-		throw new MailSendingException("Failed to send query resolution " + e.getMessage(), e.getCause());
+			javaMailSender.send(message);
+			
+			// log the successful email sendingq
+			LoggingUtil.logOperation(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Successfully sent query resolution to: " + to
+			);
+			
+			return CompletableFuture.completedFuture(null);
+		} catch (MessagingException e) {
+			LoggingUtil.logError(
+				log,
+				MessageConstant.Operation.CREATE,
+				EMAIL_SERVICE,
+				null,
+				"Failed to send query resolution to: " + to + ERROR + e.getMessage(),
+				e
+			);
+			throw new MailSendingException("Failed to send query resolution: " + e.getMessage(), e.getCause());
+		}
 	}
-}
 
 	public String getResetTokenContent(String name, String token) {
     return """
