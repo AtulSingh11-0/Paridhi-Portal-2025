@@ -27,11 +27,14 @@ public class AppConstant {
 	public static final String SUCCESS = "SUCCESS";
 	public static final String OPEN = "OPEN";
 	public static final String CLOSED = "CLOSED";
+	public static final String RESOLVED = "RESOLVED";
+	public static final String UNRESOLVED = "UNRESOLVED";
 
 	public static final String EVENT = "Event";
 	public static final String EVENT_COMBO = "EventCombo";
 	public static final String EVENT_IMAGE = "EventImage";
 	public static final String CLOUDINARY_IMAGE = "CloudinaryImage";
+	public static final String CONTACT_QUERY = "ContactQuery";
 
 	public static final long MAX_IMAGE_SIZE = 10L * 1024 * 1024; // 10 MB
 }
