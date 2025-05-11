@@ -3,6 +3,7 @@ package com.megatronix.paridhi.model;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -33,6 +34,7 @@ public class PasswordResetToken {
   @JoinColumn(nullable = false, name = "user_id")
   private User user;
 
+  @Column(name = "expiry_date", nullable = false)
   private LocalDateTime expiryDate;
   private boolean used;
 

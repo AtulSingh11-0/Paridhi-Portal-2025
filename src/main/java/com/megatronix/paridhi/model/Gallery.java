@@ -27,7 +27,7 @@ public class Gallery {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	private String paridhiYear;
+	private String batchYear;
 	private String imageSecureUrl;
 	private String imagePublicId;
 

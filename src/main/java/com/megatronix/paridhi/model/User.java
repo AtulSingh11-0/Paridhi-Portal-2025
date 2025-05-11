@@ -79,9 +79,6 @@ public class User implements UserDetails {
 	private List<MRD> gids = new ArrayList<>();
 
 	@Builder.Default
-	private boolean isPaid = false;
-
-	@Builder.Default
 	private boolean isVerified = false;
 
 	@Builder.Default

@@ -12,9 +12,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,22 +28,20 @@ public class ContactQuery {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	
-	@NotBlank
+	@Column(nullable = false)
 	private String name;
 	
-	@NotBlank
-	@Email
+	@Column(nullable = false)
 	private String email;
 	
-	@NotBlank
+	@Column(nullable = false)
 	private String contact;
 	
-	@NotBlank
-	@Size(min = 10, max = 1000)
-	@Column(length = 1000)
+	@Column(length = 1000, nullable = false)
 	private String query;
 	
-	private boolean resolved;
+	@Column(name = "is_resolved")
+	private boolean isResolved;
 	
 	@Column(length = 1000)
 	private String response;
@@ -55,8 +50,10 @@ public class ContactQuery {
 	private User resolvedBy;
 	
 	@CreationTimestamp
+	@Column(name = "created_at", updatable = false)
 	private LocalDateTime createdAt;
 	
 	@UpdateTimestamp
+	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 }

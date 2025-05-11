@@ -32,11 +32,14 @@ public class OtpToken {
   @Column(nullable = false, length = 6)
   private String otp;
 
+  @Column(nullable = false)
+  private String email;
+
   @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
   @JoinColumn(nullable = false, name = "user_id", unique = true)
   private User user;
 
-  @Column(nullable = false)
+  @Column(name = "expires_at", nullable = false)
   private LocalDateTime expiryDate;
 
   private boolean used;
@@ -49,6 +52,10 @@ public class OtpToken {
     // OTP valid for 10 minutes
     this.expiryDate = LocalDateTime.now().plusMinutes(10);
     this.used = false;
+    // If email is null, set it from the user object
+    if (this.email == null && this.user != null) {
+      this.email = this.user.getEmail();
+    }
   }
 
   public boolean isExpired() {
