@@ -1,38 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <property name="LOGS" value="./logs" />
-
+    <!-- Console appender with thread information -->
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) [%blue(%X{requestId})] %yellow(%C{1}) - %msg%n%throwable</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) [%blue(%X{requestId})] [%magenta(%thread)] %yellow(%C{1}) - %msg%n%throwable</pattern>
         </encoder>
-    </appender>
-
-    <appender name="RollingFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOGS}/paridhi-portal.log</file>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{requestId}] [%thread] %logger{36} - %msg%n</pattern>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOGS}/archived/paridhi-portal-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>10MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
     </appender>
     
-    <!-- Async appenders for non-blocking performance -->
+    <!-- Async wrapper for console appender for non-blocking performance -->
     <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="Console" />
-        <queueSize>512</queueSize>
-        <discardingThreshold>0</discardingThreshold>
-        <includeCallerData>false</includeCallerData>
-        <neverBlock>true</neverBlock>
-    </appender>
-
-    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="RollingFile" />
         <queueSize>512</queueSize>
         <discardingThreshold>0</discardingThreshold>
         <includeCallerData>false</includeCallerData>
@@ -42,12 +19,30 @@
     <!-- Production configuration -->
     <springProfile name="prod">
         <root level="INFO">
-            <appender-ref ref="ASYNC_FILE" />
+            <appender-ref ref="ASYNC_CONSOLE" />
         </root>
         
-        <!-- Security sensitive logs -->
-        <logger name="com.megatronix.paridhi.security" level="INFO" additivity="false">
-            <appender-ref ref="ASYNC_FILE" />
+        <!-- Application-specific logs -->
+        <logger name="com.megatronix.paridhi" level="INFO" additivity="false">
+            <appender-ref ref="ASYNC_CONSOLE" />
+        </logger>
+        
+        <!-- Reduce noise from common libraries -->
+        <logger name="org.apache.catalina" level="WARN" />
+        <logger name="org.springframework" level="WARN" />
+        <logger name="org.hibernate" level="WARN" />
+        <logger name="com.zaxxer.hikari" level="WARN" />
+    </springProfile>
+
+    <!-- Development configuration -->
+    <springProfile name="test">
+        <root level="INFO">
+            <appender-ref ref="ASYNC_CONSOLE" />
+        </root>
+        
+        <!-- More detailed application logs for development -->
+        <logger name="com.megatronix.paridhi" level="DEBUG" additivity="false">
+            <appender-ref ref="ASYNC_CONSOLE" />
         </logger>
     </springProfile>
 
@@ -55,12 +50,11 @@
     <springProfile name="dev">
         <root level="INFO">
             <appender-ref ref="ASYNC_CONSOLE" />
-            <appender-ref ref="ASYNC_FILE" />
         </root>
         
+        <!-- More detailed application logs for development -->
         <logger name="com.megatronix.paridhi" level="DEBUG" additivity="false">
             <appender-ref ref="ASYNC_CONSOLE" />
-            <appender-ref ref="ASYNC_FILE" />
         </logger>
     </springProfile>
 </configuration>
