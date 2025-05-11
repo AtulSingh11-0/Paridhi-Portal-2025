@@ -4,5 +4,10 @@ public enum Year {
 	FIRST,
 	SECOND,
 	THIRD,
-	FOURTH
+	FOURTH,
+	PASSOUT,
+	ALUMNI,
+	OTHER,
+	OTHERS,
+	NOT_APPLICABLE;
 }

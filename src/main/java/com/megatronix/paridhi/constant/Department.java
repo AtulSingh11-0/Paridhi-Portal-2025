@@ -16,7 +16,13 @@ public enum Department {
 	MBA,
 	BCA,
 	MCA,
+	BSC,
+	MSC,
 	BCOM,
 	MCOM,
-	OTHERS
+	BA,
+	MA,
+	LLB,
+	LLM,
+	OTHERS;
 }

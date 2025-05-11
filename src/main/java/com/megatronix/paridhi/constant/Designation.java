@@ -1,28 +1,25 @@
 package com.megatronix.paridhi.constant;
 
 public enum Designation {
-	MEMBER("Member"),
+	MEGATRON(AppConstant.MEGATRON),
+	MEMBER(AppConstant.MEMBER),
 
-	APP_DEV_CO_LEAD("App Development"),
-	APP_DEV_LEAD("App Development"),
+	APP_DEVELOPER(AppConstant.APP_DEVELOPER),
 
-	FRONTEND_DEV_CO_LEAD("Web"),
-	FRONTEND_DEV_LEAD("Web"),
-	BACKEND_DEV_CO_LEAD("Web"),
-	BACKEND_DEV_LEAD("Web"),
-	FULL_STACK_DEV_CO_LEAD("Web"),
-	FULL_STACK_DEV_LEAD("Web"),
+	FRONTEND_DEVELOPER(AppConstant.FRONTEND_DEVELOPER),
+	BACKEND_DEVELOPER(AppConstant.BACKEND_DEVELOPER),
+	BACKEND_DEVELOPER_AND_APP_DEVELOPER(AppConstant.BACKEND_DEVELOPER_AND_APP_DEVELOPER),
+	FULL_STACK_DEVELOPER(AppConstant.FULL_STACK_DEVELOPER),
 
-	AI_ML_DEV_LEAD("AI/ML"),
-	AI_ML_DEV_CO_LEAD("AI/ML");
+	BARA_BHATARI(AppConstant.BARA_BHATARI);
 
-	private final String category;
+	private final String role;
 
-	Designation(String category) {
-		this.category = category;
+	Designation(String role) {
+		this.role = role;
 	}
 
-	public String getCategory() {
-		return category;
+	public String getRole() {
+		return role;
 	}
 }

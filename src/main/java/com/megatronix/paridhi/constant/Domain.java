@@ -7,4 +7,5 @@ public enum Domain {
 	ROBOTICS,
 	GAMING,
 	GENERAL,
+	EXCLUSIVE;
 }

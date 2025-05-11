@@ -1,16 +1,16 @@
 package com.megatronix.paridhi.constant;
 
 public enum Category {
-	MEGATRONS("megatrons"),
-	DEVELOPERS("developers");
+	MEGATRONS(AppConstant.MEGATRONS),
+	DEVELOPERS(AppConstant.DEVELOPERS);
 
-	private final String role;
+	private final String categoryValue;
 
-	Category(String role) {
-		this.role = role;
+	Category(String categoryValue) {
+		this.categoryValue = categoryValue;
 	}
 
-	public String getRole() {
-		return role;
+	public String getCategoryValue() {
+		return categoryValue;
 	}
 }
