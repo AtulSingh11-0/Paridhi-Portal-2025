@@ -36,7 +36,7 @@ public class DomainPosterController {
 	public ResponseEntity<DomainPosterResponse> getDomainPosterByName(
 		@PathVariable Domain domainName
 	) {
-		return ResponseEntity.ok(domainPosterService.getDomainPoster(domainName));
+		return ResponseEntity.ok(domainPosterService.getDomainPosterByDomain(domainName));
 	}
 
 	@GetMapping

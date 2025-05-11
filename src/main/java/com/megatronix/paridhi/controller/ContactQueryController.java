@@ -48,11 +48,11 @@ public class ContactQueryController {
 	@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
 	@GetMapping
 	public ResponseEntity<List<ContactQueryResponse>> getAllQueries(
-		@RequestParam(required = false) Boolean resolved,
+		@RequestParam(required = false) Boolean isResolved,
 		@AuthenticationPrincipal User user
 	) {
-		if (resolved != null) {	
-			return ResponseEntity.ok(contactQueryService.getQueriesByResolutionStatus(resolved, user));
+		if (isResolved != null) {	
+			return ResponseEntity.ok(contactQueryService.getQueriesByResolutionStatus(isResolved, user));
 		}
 		return ResponseEntity.ok(contactQueryService.getAllQueries(user));
 	}

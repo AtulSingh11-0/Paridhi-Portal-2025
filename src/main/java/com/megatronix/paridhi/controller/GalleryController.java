@@ -40,11 +40,11 @@ public class GalleryController {
 		return ResponseEntity.ok(galleryService.getAllImages(page, size));
 	}
 
-	@GetMapping("/year/{paridhiYear}")
+	@GetMapping("/year/{batchYear}")
 	public ResponseEntity<List<GalleryResponse>> getImageByParidhiYear(
-		@PathVariable String paridhiYear
+		@PathVariable String batchYear
 	) {
-		return ResponseEntity.ok(galleryService.getImageByParidhiYear(paridhiYear));
+		return ResponseEntity.ok(galleryService.getImageByBatchYear(batchYear));
 	}
 
 	@GetMapping("/{id}")
@@ -61,11 +61,11 @@ public class GalleryController {
 		consumes = MediaType.MULTIPART_FORM_DATA_VALUE
 	)
 	public ResponseEntity<GalleryResponse> uploadImage(
-		@RequestPart("paridhiYear") String paridhiYear,
+		@RequestPart("batchYear") String batchYear,
 		@RequestPart("image") MultipartFile image,
 		@AuthenticationPrincipal User user
 	) {
-		return ResponseEntity.status(HttpStatus.CREATED).body(galleryService.uploadImage(paridhiYear, image, user));
+		return ResponseEntity.status(HttpStatus.CREATED).body(galleryService.uploadImage(batchYear, image, user));
 	}
 
 	@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")

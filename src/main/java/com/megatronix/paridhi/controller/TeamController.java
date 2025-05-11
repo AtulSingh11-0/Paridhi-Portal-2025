@@ -28,7 +28,8 @@ import lombok.RequiredArgsConstructor;
 public class TeamController {
   private final TeamService teamService;
 
-  @PreAuthorize("isAuthenticated()")
+  // @PreAuthorize("isAuthenticated()")
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @PostMapping("/register")
   public ResponseEntity<TeamResponse> registerTeam(
     @Valid @RequestBody TeamRequest request
@@ -85,7 +86,7 @@ public class TeamController {
     return ResponseEntity.ok(teamService.getTeamsByEvent(eventId));
   }
 
-	@PreAuthorize("hasRole('SUPERADMIN')")
+	@PreAuthorize("hasRole('SUPERADMIN') or @teamSecurity.isGidOwner(#gid, authentication.name)")
   @GetMapping("/gid/{gid}")
   public ResponseEntity<List<TeamResponse>> getTeamsByGid(
     @PathVariable String gid

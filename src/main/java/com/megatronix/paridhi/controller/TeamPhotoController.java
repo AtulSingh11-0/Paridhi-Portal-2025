@@ -1,7 +1,5 @@
 package com.megatronix.paridhi.controller;
 
-import java.util.List;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.megatronix.paridhi.constant.Category;
+import com.megatronix.paridhi.dto.response.CategorizedTeamPhotoResponse;
 import com.megatronix.paridhi.dto.response.TeamPhotoResponse;
 import com.megatronix.paridhi.model.User;
 import com.megatronix.paridhi.service.TeamPhotoService;
@@ -33,10 +32,8 @@ public class TeamPhotoController {
 	// Public Endpoints
 
 	@GetMapping
-	public ResponseEntity<List<TeamPhotoResponse>> getTeamPhotosByCategory(
-		@RequestParam(name = "category", defaultValue = "MEGATRONS") Category category
-	) {
-		return ResponseEntity.ok(teamPhotoService.getTeamPhotosByCategory(category));
+	public ResponseEntity<CategorizedTeamPhotoResponse> getTeamPhotos() {
+		return ResponseEntity.ok(teamPhotoService.getTeamPhotos());
 	}
 
 	// Authorized Endpoints

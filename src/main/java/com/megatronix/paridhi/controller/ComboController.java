@@ -121,6 +121,7 @@ public class ComboController {
 	}
 
   // Registration endpoint for combos
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @PostMapping("/register")
   public ResponseEntity<List<TeamResponse>> registerForCombo(
     @Valid @RequestBody ComboTeamRequest request

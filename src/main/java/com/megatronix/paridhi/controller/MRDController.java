@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.megatronix.paridhi.dto.request.AdminMRDRequest;
 import com.megatronix.paridhi.dto.request.MRDRequest;
 import com.megatronix.paridhi.dto.response.MRDResponse;
 import com.megatronix.paridhi.model.User;
@@ -30,9 +31,18 @@ public class MRDController {
 
   // Public Endpoints
 
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
   @PostMapping("/register")
   public ResponseEntity<MRDResponse> registerMRD(
     @Valid @RequestBody MRDRequest request
+  ) {
+    return ResponseEntity.status(HttpStatus.CREATED).body(mrdService.registerMRD(request));
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+  @PostMapping("/")
+  public ResponseEntity<MRDResponse> registerMRD(
+    @Valid @RequestBody AdminMRDRequest request
   ) {
     return ResponseEntity.status(HttpStatus.CREATED).body(mrdService.registerMRD(request));
   }
