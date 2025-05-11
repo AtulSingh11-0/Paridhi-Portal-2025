@@ -35,7 +35,6 @@ public class AuthResponse {
 		private Department department;
 		private String roll;
 		private List<String> gids;
-		private boolean isPaid;
 		private boolean isVerified;
 		private boolean isProfileCreated;
 		@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -57,7 +56,6 @@ public class AuthResponse {
 				.department(user.getDepartment())
 				.roll(user.getRollNo())
 				.gids(user.getGids())
-				.isPaid(user.isPaid())
 				.isVerified(user.isVerified())
 				.isProfileCreated(user.isProfileCreated())
 				.lastLogin(user.getLastLogin())

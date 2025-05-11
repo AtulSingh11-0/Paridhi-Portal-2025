@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class GalleryResponse {
 	private Long id;
-	private String paridhiYear;
+	private String batchYear;
 	private Map<String, String> imageDetails;
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime createdAt;
@@ -29,7 +29,7 @@ public class GalleryResponse {
 	public static GalleryResponse fromGallery(Gallery gallery) {
 		return GalleryResponse.builder()
 			.id(gallery.getId())
-			.paridhiYear(gallery.getParidhiYear())
+			.batchYear(gallery.getBatchYear())
 			.imageDetails(Map.of("secureUrl", gallery.getImageSecureUrl(), "publicId", gallery.getImagePublicId()))
 			.createdAt(gallery.getCreatedAt())
 			.updatedAt(gallery.getUpdatedAt())

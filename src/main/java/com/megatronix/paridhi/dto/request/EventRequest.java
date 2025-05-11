@@ -58,7 +58,6 @@ public class EventRequest {
 	@Min(value = 0, message = "Registration fee must be non-negative")
 	private Double registrationFee;
 	
-	@NotNull(message = "Prize pool cannot be null")
 	@Min(value = 0, message = "Prize pool must be non-negative")
 	private Double prizePool;
 }

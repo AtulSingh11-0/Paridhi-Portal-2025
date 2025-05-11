@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.megatronix.paridhi.constant.Designation;
 import com.megatronix.paridhi.constant.Year;
 import com.megatronix.paridhi.model.MegatronixTeam;
 
@@ -26,7 +25,7 @@ public class MegatronixTeamResponse {
 	private Year year;
 	private Map<String, String> socialLinks;
 	private String imageLink;
-	private Designation designation;
+	private String designation;
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
   private LocalDateTime createdAt;
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -50,7 +49,7 @@ public class MegatronixTeamResponse {
 					))
 			))
 			.imageLink(member.getImageLink())
-			.designation(member.getDesignation())
+			.designation(member.getDesignation().getRole())
 			.createdAt(member.getCreatedAt())
 			.updatedAt(member.getUpdatedAt())
 			.build();
