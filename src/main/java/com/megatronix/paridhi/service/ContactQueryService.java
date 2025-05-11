@@ -2,8 +2,7 @@ package com.megatronix.paridhi.service;
 
 import java.util.List;
 
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,15 +35,6 @@ public class ContactQueryService {
 	 * public methods - doesn't require authentication
 	 */
 
-	// @CacheEvict(value = "contactQueries", allEntries = true)
-	@CacheEvict(
-		value = {
-			"contactQueries", 
-			"contactQueriesByResolved", 
-			"contactQueryById"
-		}, 
-		allEntries = true
-	)
 	public ContactQueryResponse createContactQuery(ContactQueryRequest request) {
 		// log the operation
 		LoggingUtil.logOperation(
@@ -61,7 +51,7 @@ public class ContactQueryService {
 			.email(request.getEmail())
 			.contact(request.getContact())
 			.query(request.getQuery())
-			.resolved(false)
+			.isResolved(false)
 			.build();
 		
 		// save the contact query to the database
@@ -84,7 +74,6 @@ public class ContactQueryService {
 	 * protected methods - requires authentication
 	 */
 
-	@Cacheable(value = "contactQueries")
 	public List<ContactQueryResponse> getAllQueries(User user) {
 		// log the operation
 		LoggingUtil.logOperation(
@@ -116,22 +105,21 @@ public class ContactQueryService {
 			.toList();
 	}
 	
-	@Cacheable(value = "contactQueriesByResolved", key = "#resolved")
-	public List<ContactQueryResponse> getQueriesByResolutionStatus(boolean resolved, User user) {
+	public List<ContactQueryResponse> getQueriesByResolutionStatus(boolean isResolved, User user) {
 		// log the operation
 		LoggingUtil.logOperation(
 			log,
 			MessageConstant.Operation.READ,
 			AppConstant.CONTACT_QUERY,
 			user,
-			"Fetching contact queries with resolved status: " + (resolved ? AppConstant.RESOLVED : AppConstant.UNRESOLVED)
+			"Fetching contact queries with resolved status: " + (isResolved ? AppConstant.RESOLVED : AppConstant.UNRESOLVED)
 		);
 		
 		// validate user access
 		checkUserAccess(user, MessageConstant.Operation.READ);
 
 		// fetch contact queries by resolution status from the database - sorted by createdAt in descending order
-		List<ContactQuery> queries = contactQueryRepository.findByResolvedOrderByCreatedAtDesc(resolved);
+		List<ContactQuery> queries = contactQueryRepository.findByIsResolvedOrderByCreatedAtDesc(isResolved);
 		
 		// log the successful retrieval of contact queries
 		LoggingUtil.logOperation(
@@ -139,7 +127,7 @@ public class ContactQueryService {
 			MessageConstant.Operation.READ,
 			AppConstant.CONTACT_QUERY,
 			user,
-			"Successfully retrieved " + queries.size() + " " + (resolved ? AppConstant.RESOLVED : AppConstant.UNRESOLVED) + " contact queries"
+			"Successfully retrieved " + queries.size() + " " + (isResolved ? AppConstant.RESOLVED : AppConstant.UNRESOLVED) + " contact queries"
 		);
 		
 		// return the list of ContactQueryResponse objects
@@ -148,7 +136,6 @@ public class ContactQueryService {
 			.toList();
 	}
 	
-	@Cacheable(value = "contactQueryById", key = "#id")
 	public ContactQueryResponse getQueryById(Long id, User user) {
 		// log the operation
 		LoggingUtil.logOperation(
@@ -188,15 +175,7 @@ public class ContactQueryService {
 		// return the ContactQueryResponse object
 		return ContactQueryResponse.fromContactQuery(query);
 	}
-	
-	@CacheEvict(
-		value = {
-			"contactQueries", 
-			"contactQueriesByResolved", 
-			"contactQueryById"
-		}, 
-		allEntries = true
-	)
+
 	@Transactional
 	public ContactQueryResponse resolveQuery(Long id, ResolveQueryRequest request, User user) {
 		// log the operation

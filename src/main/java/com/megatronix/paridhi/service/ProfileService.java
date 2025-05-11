@@ -2,8 +2,7 @@ package com.megatronix.paridhi.service;
 
 import java.util.List;
 
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,15 +31,7 @@ public class ProfileService {
 	private static final String USER_ID = "User ID: ";
 	private static final String PROFILE_ID = " profile ID: ";
 	private static final String USER_NOT_FOUND = "User not found with ID: ";
-	private static final String DEFAULT_PROFILE_PIC = "https://cdn-icons-png.flaticon.com/512/5951/5951752.png";
 
-	@CacheEvict(
-		value = {
-			"profileById",
-			"profilesByCreatedStatus"
-		},
-		allEntries = true
-	)
 	@Transactional
 	public ProfileResponse createProfile(ProfileRequest request, User user) {
 		// log the operation
@@ -66,7 +57,7 @@ public class ProfileService {
 					"User not found with email: " + request.getEmail(),
 					null
 				);
-				return new UserNotFoundException("User not found with email: " + request.getEmail());
+				return new UserNotFoundException(String.format(MessageConstant.ErrorTemplate.NOT_FOUND, AppConstant.USER));
 			});
 
 		// Check if profile already exists
@@ -79,11 +70,11 @@ public class ProfileService {
 				"User with ID " + existingUser.getId() + " already has a profile, cannot create another",
 				null
 			);
-			throw new ProfileAlreadyExistsException("User with ID " + existingUser.getId() + " already has a profile");
+			throw new ProfileAlreadyExistsException("User already has a profile");
 		}
 
 		// update profile fields for the user
-		existingUser.setProfilePicture(DEFAULT_PROFILE_PIC);
+		existingUser.setProfilePicture(AppConstant.DEFAULT_PROFILE_PIC);
 		existingUser.setContact(request.getContact());
 		existingUser.setCollege(request.getCollege());
 		existingUser.setYear(request.getYear());
@@ -109,7 +100,6 @@ public class ProfileService {
 			.build();
 	}
 
-	@Cacheable(value = "profileById", key = "#id")
 	public ProfileResponse getProfileById(Long id, User user) {
 		// log the operation
 		LoggingUtil.logOperation(
@@ -134,7 +124,7 @@ public class ProfileService {
 					USER_NOT_FOUND + id,
 					null
 				);
-				return new UserNotFoundException(USER_NOT_FOUND + id);
+				return new UserNotFoundException(String.format(MessageConstant.ErrorTemplate.NOT_FOUND, AppConstant.USER));
 			});
 
 		// log the successful retrieval of the profile
@@ -152,7 +142,6 @@ public class ProfileService {
 			.build();
 	}
 
-	@Cacheable(value = "profilesByCreatedStatus", key = "#isProfileCreated")
 	public List<ProfileResponse> getAllByIsProfileCreated(boolean isProfileCreated, User user) {
 		// log the operation
 		LoggingUtil.logOperation(
@@ -197,13 +186,6 @@ public class ProfileService {
 			.toList();
 	}
 
-	@CacheEvict(
-		value = {
-			"profileById",
-			"profilesByCreatedStatus"
-		},
-		allEntries = true
-	)
 	@Transactional
 	public ProfileResponse updateProfile(Long id, ProfileRequest request, User user) {
 		// log the operation
@@ -229,7 +211,7 @@ public class ProfileService {
 					USER_NOT_FOUND + id,
 					null
 				);
-				return new UserNotFoundException(USER_NOT_FOUND + id);
+				return new UserNotFoundException(String.format(MessageConstant.ErrorTemplate.NOT_FOUND, AppConstant.USER));
 			});
 		
 		// check if profile exists
@@ -242,7 +224,7 @@ public class ProfileService {
 				"Profile update attempted for user ID: " + existingUser.getId() + " who doesn't have a profile",
 				null
 			);
-			throw new ProfileNotYetCreatedException("User with ID " + id + " needs to create a profile first");
+			throw new ProfileNotYetCreatedException("User needs to create a profile first");
 		}
 
 		// Update profile fields

@@ -4,8 +4,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +30,6 @@ import lombok.extern.slf4j.Slf4j;
 public class MegatronixTeamService {
 	private final MegatronixTeamRepository megatronixTeamRepository;
 
-	@CacheEvict(value = "megatronixTeamMembers", allEntries = true)
 	@Transactional
 	public MegatronixTeamResponse createMemberProfile(MegatronixTeamRequest request, User user) {
 		log.info("Creating member profile for: {}, year: {}, by: {}", request.getName(), request.getYear(), user.getEmail());
@@ -65,7 +63,6 @@ public class MegatronixTeamService {
 		return MegatronixTeamResponse.fromMegatronixTeam(savedMember);
 	}
 
-	@CacheEvict(value = "megatronixTeamMembers", allEntries = true)
 	@Transactional
 	public MegatronixTeamResponse updateMemberProfile(Long id, MegatronixTeamRequest request, User user) {
 		log.info("Updating member profile for: {}, year: {}, by: {}", request.getName(), request.getYear(), user.getEmail());
@@ -98,7 +95,6 @@ public class MegatronixTeamService {
 		return MegatronixTeamResponse.fromMegatronixTeam(updatedMember);
 	}
 
-	@CacheEvict(value = "megatronixTeamMembers", allEntries = true)
 	@Transactional
 	public void deleteMemberProfile(Long id, User user) {
 		log.info("Deleting member profile with ID: {}, by: {}", id, user.getEmail());
@@ -118,16 +114,12 @@ public class MegatronixTeamService {
 		log.info("Member profile deleted successfully for: {}, year: {}", existingMember.getName(), existingMember.getYear());
 	}
 
-	@Cacheable(value = "megatronixTeamMembers")
 	public CategorizedMembersResponse getAllMemberProfilesCategorized() {
     log.info("Fetching all member profiles");
     List<MegatronixTeam> membersPage = megatronixTeamRepository.findAll();
     
-    // Create the categorized response from the page content
-    CategorizedMembersResponse categorizedResponse = categorizeMembers(membersPage);
-    
-    // Wrap it in a Page for consistent API response
-    return categorizedResponse;
+    // Create the categorized response from the page content and return its response
+    return categorizeMembers(membersPage);
 	}
 
 	private CategorizedMembersResponse categorizeMembers(List<MegatronixTeam> members) {
@@ -146,13 +138,13 @@ public class MegatronixTeamService {
     
     // Split and sort members into regular Members and Developers
     List<MegatronixTeamResponse> regularMembers = members.stream()
-			.filter(member -> member.getDesignation() == Designation.MEMBER)
 			.sorted(yearComparator)
 			.map(MegatronixTeamResponse::fromMegatronixTeam)
 			.toList();
+			// .filter(member -> (member.getDesignation() == Designation.MEMBER) || (member.getDesignation() == Designation.MEGATRON) )
     
     List<MegatronixTeamResponse> developers = members.stream()
-			.filter(member -> member.getDesignation() != Designation.MEMBER)
+			.filter(member -> (member.getDesignation() != Designation.MEMBER) && (member.getDesignation() != Designation.MEGATRON) )
 			.sorted(yearComparator)
 			.map(MegatronixTeamResponse::fromMegatronixTeam)
 			.toList();

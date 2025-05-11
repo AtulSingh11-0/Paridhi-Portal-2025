@@ -3,8 +3,6 @@ package com.megatronix.paridhi.service;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,14 +36,10 @@ public class EventService {
   private final EventRepository eventRepository;
 	private final ComboRepository comboRepository;
 	private final CloudinaryService cloudinaryService;
-	private static final String EVENT = " event";
-	private static final String EVENT_NOT_FOUND = "Event not found with ID: ";
   
 	/*
 	 * public methods - doesn't require authentication
 	 */
-
-	@Cacheable(value = "events")
   public List<EventResponse> getAllEvents() {
     // log the operation
 		LoggingUtil.logOperation(
@@ -65,7 +59,7 @@ public class EventService {
 			MessageConstant.Operation.READ,
 			AppConstant.EVENT,
 			null,
-			AppConstant.SUCCESSFULLY_RETRIEVED + events.size() + " events"
+			AppConstant.SUCCESSFULLY_RETRIEVED + events.size() + AppConstant.EVENT
     );
     
 		// map events to EventResponse DTOs and return
@@ -74,7 +68,6 @@ public class EventService {
 			.toList();
   }
 
-	@Cacheable(value = "eventsByDomain", key = "#domain.name()")
   public List<EventResponse> getEventsByDomain(Domain domain) {
     // log the operation
 		LoggingUtil.logOperation(
@@ -103,7 +96,6 @@ public class EventService {
 			.toList();
   }
 
-	@Cacheable(value = "eventsByRegistration", key = "#isRegistrationOpen")
   public List<EventResponse> getEventsByRegistration(boolean isRegistrationOpen) {
     // log the operation
 		LoggingUtil.logOperation(
@@ -133,7 +125,6 @@ public class EventService {
 			.toList();
   }
 
-	@Cacheable(value = "eventsByType", key = "#eventType.name()")
   public List<EventResponse> getEventsByType(EventType eventType) {
     // log the operation
 		LoggingUtil.logOperation(
@@ -162,7 +153,6 @@ public class EventService {
 			.toList();
   }
 
-	@Cacheable(value = "eventById", key = "#eventId")
   public EventResponse getEventById(Long eventId) {
     // log the operation
 		LoggingUtil.logOperation(
@@ -173,19 +163,8 @@ public class EventService {
 			"Fetching event with ID: " + eventId
     );
     
-		// fetch event by ID from the database
-    Event event = eventRepository.findById(eventId)
-			.orElseThrow(() -> {
-				LoggingUtil.logError(
-					log,
-					MessageConstant.Operation.READ,
-					AppConstant.EVENT,
-					null,
-					EVENT_NOT_FOUND + eventId,
-					null
-				);
-				return new EventNotFoundException(eventId);
-			});
+		// find event by ID
+    var event = fetchEventById(eventId, null);
     
 		// log the successful retrieval of the event
 		LoggingUtil.logOperation(
@@ -200,21 +179,10 @@ public class EventService {
     return EventResponse.fromEvent(event);
   }
 
-
 	/*
 	 * protected methods - requires authentication
 	 */
 
-	@CacheEvict(
-		value = {
-			"events", 
-			"eventsByDomain", 
-			"eventsByRegistration", 
-			"eventsByType", 
-			"eventById"
-		}, 
-		allEntries = true
-	)
 	@Transactional
   public EventResponse createEvent(EventRequest request, User user) {
 		// log the operation
@@ -228,6 +196,9 @@ public class EventService {
     
     // validate user access
     checkUserAccess(user, MessageConstant.Operation.CREATE);
+
+		// validate event request fields
+		validateEventRequest(request);
     
     // create event builder object
     var event = Event.builder()
@@ -238,18 +209,19 @@ public class EventService {
       .description(request.getDescription())
       .venue(request.getVenue())
       .coordinatorDetails(request.getCoordinatorDetails())
-      .eventPictureSecureUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSxrgoLK49zGt45fybNVJfpDUt4otbtAfmWbg&s")
+      .eventPictureSecureUrl(AppConstant.DEFAULT_EVENT_IMAGE_SECURE_URL)
+			.eventPicturePublicId(AppConstant.DEFAULT_EVENT_IMAGE_PUBLIC_ID)
       .ruleBook(request.getRuleBook())
       .minPlayers(request.getMinPlayers())
       .maxPlayers(request.getMaxPlayers())
       .registrationFee(request.getRegistrationFee())
-      .prizePool(request.getPrizePool())
+      .prizePool(request.getPrizePool() )
       .createdBy(user)
       .updatedBy(user)
       .build();
 
     // save event to database
-    Event savedEvent = eventRepository.save(event);
+    var savedEvent = eventRepository.save(event);
     
 		// log the successful creation of the event
     LoggingUtil.logOperation(
@@ -264,16 +236,6 @@ public class EventService {
     return EventResponse.fromEvent(savedEvent);
   }
 
-	@CacheEvict(
-		value = {
-			"events", 
-			"eventsByDomain", 
-			"eventsByRegistration", 
-			"eventsByType",
-			"eventById"
-		}, 
-		allEntries = true
-	)
 	@Transactional
   public EventResponse updateEvent(Long eventId, EventRequest request, User user) {
     // log the operation
@@ -288,19 +250,11 @@ public class EventService {
     // validate user access
     checkUserAccess(user, MessageConstant.Operation.UPDATE);
     
-    // check if the event exists
-    var existingEvent = eventRepository.findById(eventId)
-			.orElseThrow(() -> {
-				LoggingUtil.logError(
-					log,
-					MessageConstant.Operation.UPDATE,
-					AppConstant.EVENT,
-					user,
-					EVENT_NOT_FOUND + eventId,
-					null
-				);
-				return new EventNotFoundException(eventId);
-			});
+		// validate event request fields
+		validateEventRequest(request);
+
+    // find event by ID
+    var existingEvent = fetchEventById(eventId, user);
     
     // update event fields
     existingEvent.setDomain(request.getDomain());
@@ -333,16 +287,81 @@ public class EventService {
     return EventResponse.fromEvent(updatedEvent);
   }
 
-	@CacheEvict(
-		value = {
-			"events", 
-			"eventsByDomain", 
-			"eventsByRegistration", 
-			"eventsByType",
-			"eventById"
-		}, 
-		allEntries = true
-	)
+	@Transactional
+	public EventResponse updateEventImage(Long eventId, MultipartFile file, User user) {
+		// log the operation
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.UPDATE,
+			AppConstant.EVENT_IMAGE,
+			user,
+			"Updating image for event with ID: " + eventId + " - File: " + file.getOriginalFilename() + " (" + file.getSize() + " bytes)"
+		);
+		
+		// validate user access
+		checkUserAccess(user, "update image of");
+		
+		// find event by ID
+		var existingEvent = fetchEventById(eventId, user);
+			
+		// clean up previous image if it exists
+		if (existingEvent.getEventPicturePublicId() != null) {
+			try {
+				LoggingUtil.logOperation(
+					log,
+					MessageConstant.Operation.DELETE,
+					AppConstant.CLOUDINARY_IMAGE,
+					user,
+					"Removing previous image with public ID: " + existingEvent.getEventPicturePublicId()
+				);
+				cloudinaryService.deleteFile(existingEvent.getEventPicturePublicId());
+			} catch (Exception e) {
+				// Log but continue - failure to delete old image shouldn't stop upload of new image
+				LoggingUtil.logError(
+					log,
+					MessageConstant.Operation.DELETE,
+					AppConstant.CLOUDINARY_IMAGE,
+					user,
+					"Failed to delete previous image for event ID: " + eventId + " - Continuing with upload - Error: " + e.getMessage(),
+					e
+				);
+				// continue with upload even if previous image deletion fails
+			}
+		}
+
+		// upload image to cloudinary - exceptions will be propagated to GlobalExceptionHandler
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.CREATE,
+			AppConstant.CLOUDINARY_IMAGE,
+			user,
+			"Uploading new image for event ID: " + eventId
+		);
+		
+		var imageDetails = cloudinaryService.uploadFile(file, AppConstant.EVENT);
+
+		// update event image URL
+		existingEvent.setEventPictureSecureUrl(imageDetails.get(AppConstant.SECURE_URL));
+		existingEvent.setEventPicturePublicId(imageDetails.get(AppConstant.PUBLIC_ID));
+		existingEvent.setUpdatedBy(user);
+
+		// save updated event to database
+		var updatedEvent = eventRepository.save(existingEvent);
+		
+		// log the successful update of the event image
+		LoggingUtil.logOperation(
+			log,
+			MessageConstant.Operation.UPDATE,
+			AppConstant.EVENT_IMAGE,
+			user,
+			"Successfully updated image for event ID: " + eventId + 
+			" - New image public ID: " + imageDetails.get(AppConstant.PUBLIC_ID)
+		);
+
+		// return an EventResponse object
+		return EventResponse.fromEvent(updatedEvent);
+	}
+
 	@Transactional
   public void deleteEvent(Long eventId, User user) {
     // log the operation
@@ -357,19 +376,8 @@ public class EventService {
     // validate user access
     checkUserAccess(user, MessageConstant.Operation.DELETE);
     
-    // get event by ID
-    var existingEvent = eventRepository.findById(eventId)
-			.orElseThrow(() -> {
-				LoggingUtil.logError(
-					log,
-					MessageConstant.Operation.DELETE,
-					AppConstant.EVENT,
-					user,
-					EVENT_NOT_FOUND + eventId,
-					null
-				);
-				return new EventNotFoundException(eventId);
-			});
+    // find event by ID
+    var existingEvent = fetchEventById(eventId, user);
     
     // handle teams that reference this event
     List<Team> teams = teamRepository.findByEvent(existingEvent);
@@ -452,16 +460,6 @@ public class EventService {
     );
   }
 
-	@CacheEvict(
-		value = {
-			"events", 
-			"eventsByDomain", 
-			"eventsByRegistration", 
-			"eventsByType",
-			"eventById"
-		}, 
-		allEntries = true
-	)
 	@Transactional
   public EventResponse toggleRegistrationStatus(Long eventId, User user) {
     // log the operation
@@ -476,19 +474,8 @@ public class EventService {
     // validate user access
     checkUserAccess(user, "toggle registration status of");
     
-    // fetch event by ID
-    var existingEvent = eventRepository.findById(eventId)
-			.orElseThrow(() -> {
-				LoggingUtil.logError(
-					log,
-					MessageConstant.Operation.UPDATE,
-					AppConstant.EVENT,
-					user,
-					EVENT_NOT_FOUND + eventId,
-					null
-				);
-				return new EventNotFoundException(eventId);
-			});
+    // find event by ID
+    var existingEvent = fetchEventById(eventId, user);
     
     // get current status for logging
     boolean currentStatus = existingEvent.isRegistrationOpen();
@@ -512,131 +499,7 @@ public class EventService {
     // return updated event
     return EventResponse.fromEvent(updatedEvent);
   }
-
-	@CacheEvict(
-		value = {
-			"events", 
-			"eventsByDomain", 
-			"eventsByRegistration", 
-			"eventsByType",
-			"eventById"
-		}, 
-		allEntries = true
-	)
-	@Transactional
-	public EventResponse updateEventImage(Long eventId, MultipartFile file, User user) {
-		
-		// validate file type and size
-		String contentType = file.getContentType();
-		if (file.isEmpty() || contentType == null || !contentType.startsWith("image/")) {
-			LoggingUtil.logError(
-				log,
-				MessageConstant.Operation.UPDATE,
-				AppConstant.EVENT_IMAGE,
-				user,
-				"Invalid file type or empty file for event ID: " + eventId,
-				null
-			);
-			throw new IllegalArgumentException("Invalid file type or empty file.");
-		}
-
-		// check file size
-		if (file.getSize() > AppConstant.MAX_IMAGE_SIZE) {
-			LoggingUtil.logError(
-				log,
-				MessageConstant.Operation.UPDATE,
-				AppConstant.EVENT_IMAGE,
-				user,
-				"File size exceeds limit for event ID: " + eventId + " - Size: " + file.getSize(),
-				null
-			);
-			throw new IllegalArgumentException("File size exceeds limit.");
-		}
-
-		// log the operation
-		LoggingUtil.logOperation(
-			log,
-			MessageConstant.Operation.UPDATE,
-			AppConstant.EVENT_IMAGE,
-			user,
-			"Updating image for event with ID: " + eventId + " - File: " + file.getOriginalFilename() + " (" + file.getSize() + " bytes)"
-		);
-		
-		// validate user access
-		checkUserAccess(user, "update image of");
-		
-		// fetch event by ID
-		var existingEvent = eventRepository.findById(eventId)
-			.orElseThrow(() -> {
-				LoggingUtil.logError(
-					log,
-					MessageConstant.Operation.UPDATE,
-					AppConstant.EVENT_IMAGE,
-					user,
-					EVENT_NOT_FOUND + eventId,
-					null
-				);
-				return new EventNotFoundException(eventId);
-			});
-			
-		// clean up previous image if it exists
-		if (existingEvent.getEventPicturePublicId() != null) {
-			try {
-				LoggingUtil.logOperation(
-					log,
-					MessageConstant.Operation.DELETE,
-					AppConstant.CLOUDINARY_IMAGE,
-					user,
-					"Removing previous image with public ID: " + existingEvent.getEventPicturePublicId()
-				);
-				cloudinaryService.deleteFile(existingEvent.getEventPicturePublicId());
-			} catch (Exception e) {
-				// Log but continue - failure to delete old image shouldn't stop upload of new image
-				LoggingUtil.logError(
-					log,
-					MessageConstant.Operation.DELETE,
-					AppConstant.CLOUDINARY_IMAGE,
-					user,
-					"Failed to delete previous image for event ID: " + eventId + " - Continuing with upload - Error: " + e.getMessage(),
-					e
-				);
-				// continue with upload even if previous image deletion fails
-			}
-		}
-
-		// upload image to cloudinary - exceptions will be propagated to GlobalExceptionHandler
-		LoggingUtil.logOperation(
-			log,
-			MessageConstant.Operation.CREATE,
-			AppConstant.CLOUDINARY_IMAGE,
-			user,
-			"Uploading new image for event ID: " + eventId
-		);
-		
-		var imageDetails = cloudinaryService.uploadFile(file);
-
-		// update event image URL
-		existingEvent.setEventPictureSecureUrl(imageDetails.get("secure_url"));
-		existingEvent.setEventPicturePublicId(imageDetails.get("public_id"));
-		existingEvent.setUpdatedBy(user);
-
-		// save updated event to database
-		var updatedEvent = eventRepository.save(existingEvent);
-		
-		// log the successful update of the event image
-		LoggingUtil.logOperation(
-			log,
-			MessageConstant.Operation.UPDATE,
-			AppConstant.EVENT_IMAGE,
-			user,
-			"Successfully updated image for event ID: " + eventId + 
-			" - New image public ID: " + imageDetails.get("public_id")
-		);
-
-		// return an EventResponse object
-		return EventResponse.fromEvent(updatedEvent);
-	}
-
+	
 	/*
 	 * private methods - used internally only
 	 */
@@ -649,7 +512,7 @@ public class EventService {
 				AppConstant.ACCESS_DENIED,
 				null,
 				AppConstant.FAILED,
-				"Authentication required to " + methodType + EVENT
+				String.format(MessageConstant.ErrorTemplate.AUTHENTICATION_REQUIRED, methodType + " " + AppConstant.EVENT)
 			);
 			throw new ForbiddenAccessException(MessageConstant.UserMessage.ACCESS_DENIED);
     }
@@ -661,7 +524,7 @@ public class EventService {
 				AppConstant.ACCESS_DENIED,
 				user,
 				AppConstant.FAILED,
-				"User lacks permission to " + methodType + EVENT
+				String.format(MessageConstant.ErrorTemplate.NOT_AUTHORIZED, methodType + " " + AppConstant.EVENT)
 			);
 			throw new ForbiddenAccessException(MessageConstant.UserMessage.ACCESS_DENIED);
     }
@@ -672,7 +535,90 @@ public class EventService {
 			AppConstant.ACCESS_GRANTED,
 			user,
 			AppConstant.SUCCESS,
-			"User authorized to " + methodType + EVENT
+			String.format(MessageConstant.SuccessTemplate.AUTHORIZED, methodType + " " + AppConstant.EVENT)
     );
   }
+
+	private Event fetchEventById(Long eventId, User user) {
+		return eventRepository.findById(eventId)
+			.orElseThrow(() -> {
+				LoggingUtil.logError(
+					log,
+					MessageConstant.Operation.READ,
+					AppConstant.EVENT,
+					user,
+					String.format(MessageConstant.ErrorTemplate.NOT_FOUND, AppConstant.EVENT, eventId),
+					null
+				);
+				return new EventNotFoundException(String.format(MessageConstant.ErrorTemplate.NOT_FOUND, AppConstant.EVENT));
+			});
+	}
+
+	private void validateEventRequest(EventRequest request) {
+		validateBasicEventInfo(request);
+		validateEventDetails(request);
+		validatePlayerLimits(request);
+		validateFinancialDetails(request);
+	}
+	
+	private void validateBasicEventInfo(EventRequest request) {
+		if (request.getDomain() == null || request.getDomain().toString().isEmpty()) {
+			throw new IllegalArgumentException("Domain cannot be null");
+		}
+
+		if (request.getName() == null || request.getName().isEmpty()) {
+			throw new IllegalArgumentException("Event name cannot be null or empty");
+		}
+		
+		if (request.getEventType() == null || request.getEventType().toString().isEmpty()) {
+			throw new IllegalArgumentException("Event type cannot be null");
+		}
+		
+		if (request.getEventDate() == null) {
+			throw new IllegalArgumentException("Event date cannot be null");
+		}
+	}
+	
+	private void validateEventDetails(EventRequest request) {
+		if (request.getDescription() == null || request.getDescription().isEmpty()) {
+			throw new IllegalArgumentException("Event description cannot be null or empty");
+		}
+		
+		if (request.getVenue() == null || request.getVenue().isEmpty()) {
+			throw new IllegalArgumentException("Event venue cannot be null or empty");
+		}
+		
+		if (request.getCoordinatorDetails() == null || request.getCoordinatorDetails().isEmpty()) {
+			throw new IllegalArgumentException("Event coordinator details cannot be null or empty");
+		}
+		
+		if (request.getRuleBook() == null || request.getRuleBook().isEmpty()) {
+			throw new IllegalArgumentException("Event rule book cannot be null or empty");
+		}
+	}
+	
+	private void validatePlayerLimits(EventRequest request) {
+		if (request.getMinPlayers() == null || request.getMinPlayers() < 1) {
+			throw new IllegalArgumentException("Event min players cannot be null or less than 1");
+		}
+
+		if (request.getMaxPlayers() == null || request.getMaxPlayers() < 1) {
+			throw new IllegalArgumentException("Event max players cannot be null or less than 1");
+		}
+
+		if (request.getMinPlayers() > request.getMaxPlayers()) {
+			throw new IllegalArgumentException(String.format(MessageConstant.ErrorTemplate.TEAM_SIZE, 
+				request.getMinPlayers(), request.getMaxPlayers(), request.getName()));
+		}
+	}
+	
+	private void validateFinancialDetails(EventRequest request) {
+		if (request.getRegistrationFee() == null || request.getRegistrationFee() < 0) {
+			throw new IllegalArgumentException("Event registration fee cannot be null or negative");
+		}
+		
+		if (request.getPrizePool() != null && request.getPrizePool() < 0) {
+			throw new IllegalArgumentException("Event prize pool cannot be negative");
+		}
+	}
 }

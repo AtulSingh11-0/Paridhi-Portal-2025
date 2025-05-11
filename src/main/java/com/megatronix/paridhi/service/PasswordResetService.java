@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.megatronix.paridhi.exception.InvalidResetTokenException;
 import com.megatronix.paridhi.exception.TokenExpiredException;
 import com.megatronix.paridhi.exception.UserNotFoundException;
+import com.megatronix.paridhi.constant.AppConstant;
+import com.megatronix.paridhi.constant.MessageConstant;
 import com.megatronix.paridhi.dto.request.PasswordResetConfirmationRequest;
 import com.megatronix.paridhi.dto.request.PasswordResetRequest;
 import com.megatronix.paridhi.model.PasswordResetToken;
@@ -36,12 +38,12 @@ public class PasswordResetService {
     var user = userRepository.findUserByEmail(email)
       .orElseThrow( () -> {
         log.error("User not found with email: {}", email);
-        return new UserNotFoundException("User not found with email: " + email);
+        return new UserNotFoundException(String.format(MessageConstant.ErrorTemplate.NOT_FOUND, AppConstant.USER));
       });
 
     // delete any existing password reset token for the user
     Optional<PasswordResetToken> existingToken = passwordResetTokenRepository.findByUser(user);
-    // existingToken.ifPresent(passwordResetTokenRepository::delete);
+    
     if ( existingToken.isPresent() ) {
       passwordResetTokenRepository.delete(existingToken.get());
       passwordResetTokenRepository.flush();
@@ -54,7 +56,7 @@ public class PasswordResetService {
     var savedResetToken = passwordResetTokenRepository.save(resetToken);
     
     // send email with the token to the user
-    emailService.sendPasswordResetToken(user.getEmail(), savedResetToken.getToken(), user.getName());
+    emailService.sendPasswordResetToken(user.getEmail(), user.getName(), savedResetToken.getToken());
 
     log.info("Password reset token generated and sent successfully to {}", email);
     return "Password reset instructions sent successfully to your email";
