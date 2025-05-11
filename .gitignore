@@ -3,6 +3,7 @@
 assets/
 tests/
 logs/
+*.csv
 
 HELP.md
 target/
@@ -37,4 +38,4 @@ build/
 
 ### VS Code ###
 .vscode/
-*.json
+railway.json

@@ -1,5 +1,5 @@
 # Build stage
-FROM eclipse-temurin:17.0.14_7-jdk-ubi9-minimal AS build
+FROM eclipse-temurin:21.0.6_7-jdk-ubi9-minimal AS build
 WORKDIR /app
 
 # Copy only the necessary files for Maven build
@@ -13,11 +13,10 @@ RUN chmod +x mvnw && \
     ./mvnw package -DskipTests
 
 # Runtime stage
-FROM eclipse-temurin:17.0.14_7-jre-ubi9-minimal
+FROM eclipse-temurin:21.0.6_7-jre-ubi9-minimal
 WORKDIR /app
 
 # Create a non-root user to run the application
-# Using Ubuntu (Jammy) user commands instead of Alpine (-S flag)
 RUN groupadd -r spring && useradd -r -g spring spring
 
 # Create necessary writable directories for Java temp files
@@ -32,13 +31,11 @@ USER spring:spring
 COPY --from=build --chown=spring:spring /app/target/*.jar app.jar
 
 # Environment variables for JVM optimization and temp directory configuration
-ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom -Djava.io.tmpdir=/tmp/spring"
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=40.0 -XX:InitialRAMPercentage=20.0 -Xss256k -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/spring -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication -XX:GCTimeRatio=4 -Xmx256m -Djava.security.egd=file:/dev/./urandom -Djava.io.tmpdir=/tmp/spring"
 
 # Expose the application port
 EXPOSE 8080
 
-# Health check (uncommented for better container orchestration)
-# HEALTHCHECK --interval=30s --timeout=3s CMD wget -q --spider http://localhost:8080/actuator/health || exit 1
-
 # Run the application with optimization flags
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+# ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Duser.timezone=Asia/Kolkata -jar app.jar"]
