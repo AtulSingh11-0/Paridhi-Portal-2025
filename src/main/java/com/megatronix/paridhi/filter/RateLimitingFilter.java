@@ -28,7 +28,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 	private final ConcurrentHashMap<String, AtomicInteger> requestCounts = new ConcurrentHashMap<>();
 	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 	
-	private static final int RATE_LIMIT = 100; // 100 requests per minute per IP
+	private static final int RATE_LIMIT = 25;
 	
 	public RateLimitingFilter() {
 		// Schedule cleanup of counts every minute
@@ -40,13 +40,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 		@NonNull HttpServletRequest request, 
 		@NonNull HttpServletResponse response, 
 		@NonNull FilterChain filterChain
-	) throws ServletException, IOException {      
-		// Exempt health check endpoints
-		if (request.getRequestURI().contains("/actuator/")) {
-			filterChain.doFilter(request, response);
-			return;
-		}
-
+	) throws ServletException, IOException {
 		String clientIp = LoggingUtil.getClientIp(request);
 		AtomicInteger count = requestCounts.computeIfAbsent(clientIp, k -> new AtomicInteger(0));
 		int requestCount = count.incrementAndGet();
