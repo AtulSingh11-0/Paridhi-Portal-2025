@@ -1,8 +1,10 @@
 package com.megatronix.paridhi;
 
+import java.util.Map;
+import java.util.TreeMap;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -15,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @EnableAsync
 @EnableWebMvc
-@EnableCaching
 @RestController
 @EnableScheduling
 @SpringBootApplication
@@ -26,8 +27,13 @@ public class ParidhiPortal2025Application {
 		log.info("Portal successfully running on http://localhost:8080");
 	}
 
-	@GetMapping
-	public String home() {
-		return "Hello";
+	@GetMapping(produces = "application/json;charset=UTF-8")
+	public Map<String, String> home() {
+		Map<String, String> response = new TreeMap<>();
+    response.put("chaupai-1", "जा पर कृपा राम की होई, ता पर कृपा करहिं सब कोई");
+    response.put("chaupai-2", "राम भगति मनि उर बस जाकें, दु:ख लवलेस न सपनेहुँ ताकें");
+    response.put("chaupai-3", "कवन सो काज कठिन जग माही, जो नहीं होइ तात तुम पाहीं");
+		
+		return response;
 	}
 }
