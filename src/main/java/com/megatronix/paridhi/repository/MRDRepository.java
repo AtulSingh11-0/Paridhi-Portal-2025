@@ -17,6 +17,8 @@ public interface MRDRepository extends JpaRepository<MRD, Long> {
   Optional<MRD> findByGid(String gid);
   boolean existsByGid(String gid);
   List<MRD> findByIsPaid(boolean isPaid);
+  boolean existsByGidAndUserEmail(String gid, String email);
+	boolean existsByGidAndIsPaidTrue(String gid);
 
 	@Query("SELECT DISTINCT m.user.email FROM MRD m WHERE m.gid IN :gidList")
 	List<String> findUserEmailListByGidList(@Param("gidList") List<String> gidList);

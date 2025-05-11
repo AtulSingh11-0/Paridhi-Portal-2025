@@ -14,5 +14,5 @@ import java.util.List;
 public interface GalleryRepository extends JpaRepository<Gallery, Long> {
 	@NonNull
 	Page<Gallery> findAll(@NonNull Pageable pageable);
-	List<Gallery> findByParidhiYear(String paridhiYear);
+	List<Gallery> findByBatchYear(String batchYear);
 }

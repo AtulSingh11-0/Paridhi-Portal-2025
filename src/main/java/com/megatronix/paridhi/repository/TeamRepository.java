@@ -15,13 +15,17 @@ import com.megatronix.paridhi.model.Team;
 public interface TeamRepository extends JpaRepository<Team, Long> {
   List< Team> findByEvent ( Event event );
 
-	@Query("SELECT DISTINCT t FROM Team t JOIN t.gidList gid WHERE gid IN :gidList")
-	List<Team> findByGidListContaining(@Param("gidList") List<String> gidList);
-
-  Optional< Team> findByTid ( String tid );
+  @Query("SELECT DISTINCT t FROM Team t JOIN FETCH t.contacts JOIN t.gidList gid WHERE gid IN :gidList")
+  List<Team> findByGidListContainingWithContacts(@Param("gidList") List<String> gidList);
+  
+  @Query("SELECT t FROM Team t JOIN FETCH t.contacts WHERE t.tid = :tid")
+  Optional<Team> findByTidWithContacts(@Param("tid") String tid);
+  
+  @Query("SELECT t FROM Team t JOIN FETCH t.contacts WHERE t.event = :event")
+  List<Team> findByEventWithContacts(@Param("event") Event event);
 
   List< Team> findByIsPaid ( boolean paid );
-
+  
   List< Team> findByHasPlayed ( boolean hasPlayed );
 
   boolean existsByTeamNameAndEvent ( String teamName, Event event );
