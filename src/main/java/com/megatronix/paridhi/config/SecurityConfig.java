@@ -32,26 +32,29 @@ public class SecurityConfig {
   private final JwtAuthenticationEntryPoint jwtAuthEntryPoint;
 
 	private static final String[] WHITELISTED_URLS = {
-		"/", // Landing page
-		"/api/auth/**", // Authentication endpoints
-		"/api/mrd/register", // MRD registration endpoint
-		"/api/contact", // Contact query submission endpoint (POST)
-		"/api/events", // Event endpoints
-		"/api/events/{id}", // Specific event endpoint
-		"/api/events/status", // Event status endpoints
-		"/api/events/type/**", // Event type endpoints
-		"/api/events/domains/**", // Event domain endpoints
-		"/api/combos", // Combo endpoints
-		"/api/combos/{id}", // Specific combo endpoint
-		"/api/combos/status", // Combo status endpoints
-		"/api/combos/domains/**", // Combo domain endpoints
-		"/api/galleries", // Gallery endpoints
-		"/api/galleries/featured", // Featured gallery endpoints
-		"/api/galleries/{id}", // Specific gallery endpoint
-		"/api/megatronix-team", // Megatronix team-member endpoints
-		"/api/domain-posters", // Domain poster endpoints
-		"/api/domain-posters/{domainName}", // Specific domain poster endpoint
-		"/api/team-photo", // Team photo endpoints
+			"/", // Landing page
+			"/api/auth/**", // Authentication endpoints
+			"/api/contact", // Contact query submission endpoint (POST)
+			"/api/events", // Event endpoints
+			"/api/events/{id}", // Specific event endpoint
+			"/api/events/status", // Event status endpoints
+			"/api/events/type/**", // Event type endpoints
+			"/api/events/domains/**", // Event domain endpoints
+			"/api/combos", // Combo endpoints
+			"/api/combos/{id}", // Specific combo endpoint
+			"/api/combos/status", // Combo status endpoints
+			"/api/combos/domains/**", // Combo domain endpoints
+			"/api/galleries", // Gallery endpoints
+			"/api/galleries/featured", // Featured gallery endpoints
+			"/api/galleries/{id}", // Specific gallery endpoint
+			"/api/megatronix-team", // Megatronix team-member endpoints
+			"/api/domain-posters", // Domain poster endpoints
+			"/api/domain-posters/{domainName}", // Specific domain poster endpoint
+			"/api/team-photo", // Team photo endpoints
+			"/api/mrd/", // Admin MRD registration endpoint
+			"/api/mrd/register", // MRD registration endpoint
+			"/api/combos/register",
+			"/api/teams/register", // Team registration endpointb
 	};
 
   @Bean
