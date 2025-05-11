@@ -394,6 +394,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
 	}
 
+	@ExceptionHandler(InvalidFileException.class)
+	public ResponseEntity<ErrorResponse> handleInvalidFileException(
+		InvalidFileException exception,
+		HttpServletRequest request
+	) {
+		ErrorResponse errorResponse = ErrorResponse.builder()
+			.status(HttpStatus.BAD_REQUEST.value())
+			.message(exception.getMessage())
+			.error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+			.timestamp(LocalDateTime.now())
+			.path(request.getRequestURI())
+			.build();
+
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+	}
+
 	@ExceptionHandler(FileUploadException.class)
 	public ResponseEntity<ErrorResponse> handleFileUploadException(
 		FileUploadException exception,
